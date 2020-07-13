@@ -1,14 +1,20 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import Home from '../views/Home.vue'
-import ss from "../views/ss"
 import AuditPage from "../views/AuditPage";
 import LastPage from "../views/LastPage";
 import Login from "../views/Login";
+import SuperPage from "../views/SuperPage";
+import SuperPageInput from "../views/SuperPageInput";
+import RegisterPage from "../views/RegisterPage";
 
 Vue.use(VueRouter)
 
 const routes = [
+    {
+        path:'/register',
+        component: RegisterPage
+    },
     {
         path:'/login',
         component: Login
@@ -27,22 +33,27 @@ const routes = [
         component: Home
     },
     {
-        path: '/ss',
-        component: ss
+        path: '/superpage',
+        component: SuperPage
     },
     {
-        path: '/about',
-        name: 'About',
-        // route level code-splitting
-        // this generates a separate chunk (about.[hash].js) for this route
-        // which is lazy-loaded when the route is visited.
-        component: () => import(/* webpackChunkName: "about" */ '../views/About.vue')
-    }
+        path: '/superpageinput',
+        component: SuperPageInput
+    },
+    // {
+    //     path: '/about',
+    //     name: 'About',
+    //     // route level code-splitting
+    //     // this generates a separate chunk (about.[hash].js) for this route
+    //     // which is lazy-loaded when the route is visited.
+    //     component: () => import(/* webpackChunkName: "about" */ '../views/About.vue')
+    // }
 ]
 
 const router = new VueRouter({
     mode: 'history',
-    base: process.env.BASE_URL,
+    base:'/dist/',
+    // base: process.env.BASE_URL,
     routes
 })
 

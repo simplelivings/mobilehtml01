@@ -1,12 +1,12 @@
 <template>
-    <div class="home">
+    <div class="homes">
         <p></p>
         <div class="textdiv">审&nbsp;核&nbsp;完&nbsp;成</div>
         <div class="textdiv">谢&nbsp;&nbsp;谢</div>
         <div class="divdiven"></div>
 
         <div class="divimg">
-            <img src="../assets/applogo.png">
+            <img class="img1"@click="clickImg" src="../assets/lastapplogo.png">
             <div class="textdiv2">AuditAll</div>
         </div>
     </div>
@@ -15,7 +15,7 @@
 
 </template>
 
-<script>
+<script CHARSET="UTF-8">
     // @ is an alias to /src
     import HelloWorld from '@/components/HelloWorld.vue'
 
@@ -23,11 +23,18 @@
         name: 'Home',
         components: {
             HelloWorld
+        },
+        methods:{
+            clickImg(){
+                window.opener = null;
+                window.open("", "_self");
+                window.close();
+            }
         }
     }
 </script>
-<style lang="less">
-    .home {
+<style scoped lang="less">
+    .homes {
         background-color: white;
         margin-bottom: 0vw;
         p:first-child {
@@ -41,11 +48,6 @@
     .divdiven {
         height: 60vw;
     }
-    .textdiv2{
-        margin-top: 0vw;
-        font-size: 2vw;
-        font-style: italic;
-    }
     .divimg{
         display: flex;
         align-items: center;
@@ -58,5 +60,11 @@
             opacity: 0.5;
         }
     }
+    .textdiv2 {
+        margin-top: 0vw;
+        font-size: 2vw;
+        font-style: italic;
+    }
+
 </style>
 

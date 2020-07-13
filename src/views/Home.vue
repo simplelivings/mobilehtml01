@@ -15,11 +15,14 @@
 
 </template>
 
-<script>
+<script CHARSET="UTF-8">
     // @ is an alias to /src
     import HelloWorld from '@/components/HelloWorld.vue'
 
     export default {
+        data(){
+            return{}
+        },
         name: 'Home',
         created() {
             console.log("-----created-----");
@@ -45,7 +48,7 @@
 
     }
 </script>
-<style lang="less">
+<style scoped lang="less">
     .home {
         background-color: white;
         margin-bottom: 0vw;
