@@ -27,9 +27,14 @@
 
         <!--        符合性判断-->
         <div class="divconform">
-            <van-radio-group v-model="radio" direction="horizontal">
-                <van-radio name="1" icon-size="4vw" checked-color="greenyellow" @click="conformClick">符合</van-radio>
-                <van-radio name="2" icon-size="4vw" checked-color="greenyellow" @click="unconformClick">不符合</van-radio>
+            <van-radio-group v-model="radio" direction="vertical">
+                <van-radio class="vanradio" name="1" icon-size="4vw" checked-color="greenyellow" @click="conformClick">Y | 符合</van-radio>
+                <!--        分隔条-->
+                <div class="divdivender1"></div>
+                <van-radio class="vanradio" name="2" icon-size="4vw" checked-color="greenyellow" @click="unconformClick">N | &#8195不符合</van-radio>
+                <!--        分隔条-->
+                <div class="divdivender1"></div>
+                <van-radio class="vanradio" name="3" icon-size="4vw" checked-color="greenyellow" @click="ncconformClick">N/C | 不符合（审核期已纠正）</van-radio>
             </van-radio-group>
         </div>
 
@@ -62,7 +67,6 @@
                    label-width="0"
                    type="textarea"
                    maxlength="50"
-                   border="false"
                    placeholder="请输入审核内容"/>
 
         <!--        分隔条-->
@@ -148,6 +152,7 @@
             this.userName = this.lStorage.getItem("userName");
             this.auditNum = this.lStorage.getItem("auditNum");
             this.token = this.lStorage.getItem("auditWay");
+
             //刷新后，仍保留当前页码
             if (this.storage.getItem('num') > 1) {
                 this.num = this.storage.getItem('num');
@@ -156,8 +161,6 @@
                 this.num = 1;
                 this.clickNum = 0;
             }
-
-
 
             //保留this,也可以用箭头函数
             const _this = this;
@@ -168,7 +171,7 @@
                     page: this.num,
                     num: this.auditNum,
                     userName:this.userName,
-                    auditWay:this.token
+                    auditWay:this.token,
                 }
             }).then(function (resp) {
                 _this.auditItem = resp.data.auditItem;
@@ -548,6 +551,8 @@
             },
             conformClick() {//符合点击事件，控制底部计数变化
                 this.econformNum = this.conformRadio.conformNum + 1;
+                console.log("-----conformClick---auditCon--" + this.radio);
+
                 if (this.eunconformNum > 0) {
                     this.eunconformNum = this.conformRadio.unconformNum - 1;
                 } else {
@@ -557,6 +562,18 @@
             },
             unconformClick() {//不符合点击事件，控制底部计数变化
                 this.eunconformNum = this.conformRadio.unconformNum + 1;
+                console.log("-----conformClick---unconformClick--" + this.radio);
+
+                if (this.econformNum > 0) {
+                    this.econformNum = this.conformRadio.conformNum - 1;
+                } else {
+                    this.econformNum = 0;
+                }
+            },
+            ncconformClick(){
+                this.eunconformNum = this.conformRadio.unconformNum + 1;
+                console.log("-----conformClick---unconformClick--" + this.radio);
+
                 if (this.econformNum > 0) {
                     this.econformNum = this.conformRadio.conformNum - 1;
                 } else {
@@ -583,10 +600,6 @@
 
                 }
 
-                console.log("=======this.conformRadio.finishNum===="+this.conformRadio.finishNum);
-                console.log("=======this.totalNum===="+this.totalNum);
-                console.log("=======this.Num===="+this.num);
-                console.log("")
                 if ((this.conformRadio.finishNum > 0 && ((this.conformRadio.finishNum) == this.totalNum)) || (this.num == this.totalNum)) {
 
                     //审核信息数据库与审核项目数据库大小一致，或最后一页，发送excel与发送请求，并退出网页
@@ -602,7 +615,7 @@
                 } else {
                     Toast.fail('请判断符合性');
                 }
-            }
+            },
 
         },
     }
@@ -711,6 +724,13 @@
         height: 1vw;
         margin-top: 1vw;
         margin-bottom: 1vw;
+    }
+    .divdivender1 {
+        background-color: white;
+        height: 1vw;
+    }
+    .vanradio{
+        font-size: 3vw;
     }
 
 </style>

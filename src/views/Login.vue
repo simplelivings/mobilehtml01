@@ -10,13 +10,32 @@
             <p></p>
             <p></p>
             <div>
-                <van-button class="superBtn" @click="superBtn" size="small">s</van-button>
                 <van-button @click="registerBtn">注册</van-button>
                 <van-button @click="quitBtn">退出</van-button>
             </div>
         </div>
         <!--        分割-->
         <div style="height: 13vw"></div>
+
+
+        <!--        4 项目选择器-->
+        <van-field
+                readonly
+                clickable
+                name="pickerIte"
+                :value="valueIte"
+                label="项  目"
+                placeholder="点击选择审核项目"
+                @click="showPickerIte=true"
+        />
+        <van-popup v-model="showPickerIte" position="bottom">
+            <van-picker
+                    show-toolbar
+                    :columns="columnsIte"
+                    @confirm="onConfirmIte"
+                    @cancel="showPickerIte = false"
+            />
+        </van-popup>
 
         <!--        2 输入框-->
         <div class="divinput">
@@ -47,29 +66,16 @@
             />
         </van-popup>
 
-        <!--        4 项目选择器-->
-        <van-field
-                readonly
-                clickable
-                name="pickerIte"
-                :value="valueIte"
-                label="项  目"
-                placeholder="点击选择审核项目"
-                @click="showPickerIte= true"
-        />
-        <van-popup v-model="showPickerIte" position="bottom">
-            <van-picker
-                    show-toolbar
-                    :columns="columnsIte"
-                    @confirm="onConfirmIte"
-                    @cancel="showPickerIte = false"
-            />
-        </van-popup>
 
         <div style="margin: 2vw">
             <van-button type="primary" size="large" @click="loginBtn">登 录</van-button>
         </div>
 
+        <!--        分割-->
+        <div style="height: 60vw"></div>
+
+        <van-button class="superBtn" @click="superBtn" size="small">..</van-button>
+        <van-button class="superBtn" @click="weixinBtn" size="large">weixin</van-button>
 
     </div>
 </template>
@@ -87,7 +93,8 @@
                     password: '',
                     auditObj: '',
                     auditRen: '',
-                    auditIte: ''
+                    auditIte: '',
+                    userStatu:'0'
                 },//POST至服务器数据，含用户名和密码；
                 valueUser: '',//用户输入用户名；
                 valuePs: '',//用户输入密码；
@@ -96,7 +103,7 @@
                 valueIte: '',//用户选择审核项目；
                 valueNum: '',//审核表编号；
                 columnsRen: ['班组级', '工段级', '科室级', '部门级', '公司级'],
-                columnsIte: ['分层审核', '安全检查', '现场检查', '质量检验', '工艺检查', '综合检查'],
+                columnsIte: ['分层审核', '质量检验', '安全检查', '现场检查', '工艺检查', '综合检查'],
                 showPickerRen: false,
                 showPickerIte: false,
             };
@@ -132,6 +139,9 @@
 
         },
         methods: {
+            weixinBtn(){
+                window.location.href="weixin://";
+            },
             //选择审核范围后，返回选择值；
             onConfirmRen(value) {
                 this.valueRen = value;
@@ -164,16 +174,17 @@
 
                 this.model.auditIte = this.valueIte;
 
+                this.model.userStatu = 1;
+
                 //向服务器发送请假，并将用户名与密码传给服务器，成功后服务器返回1，否则返回0；
                 var tempdata = await this.$http.post('basicinfo/login', this.model);
 
                 var auditNum = tempdata.data.auditNum;
 
                 var token = tempdata.data.token;
-                console.log("auditNum++++++++++" + auditNum + "----" + token);
 
                 //将token放入localStorage中
-                this.storage .setItem("auditWay",token);
+                this.storage.setItem("auditWay", token);
 
                 //将审核表编号，放入localStorage中
                 this.storage.setItem("auditNum", auditNum);
@@ -189,37 +200,48 @@
 
                 //判断服务器返回值，成功后跳转至审核页面，失败后显示失败提示信息；
                 if (this.valueUser.length > 0) {
-                    if (this.valueObj.length > 0) {
-                        var reg = new RegExp(/冲|D|焊|W|剪|C|M|钣|E|设备|工装|L|物流|质量|Q/i);
-                        if (reg.test(this.valueObj)) {
-                            if (this.valueRen.length > 0) {
-                                if (this.valueIte.length > 0) {
-                                    if (auditNum>= 0) {
-                                        setTimeout(() => {
-                                            this.$router.push({
-                                                path: '/auditpage',
-                                                query: {
-                                                    valueNum: auditNum.data,
-                                                    valueUser: this.valueUser
-                                                }
-                                            });
-                                        }, 2000);
-
-                                        Toast.success('登录成功');
+                    if (auditNum >=0 && auditNum <=34){
+                        if (this.valueObj.length > 0) {
+                            var reg = new RegExp(/冲|D|焊|W|剪|C|M|钣|E|设备|工装|L|物流|质量|Q/i);
+                            if (reg.test(this.valueObj)) {
+                                if (this.valueRen.length > 0) {
+                                    if (this.valueIte.length > 0) {
+                                            setTimeout(() => {
+                                                this.$router.push({
+                                                    path: '/auditpage',
+                                                    query: {
+                                                        valueNum: auditNum.data,
+                                                        valueUser: this.valueUser
+                                                    }
+                                                });
+                                            }, 2000);
+                                            Toast.success('登录成功');
                                     } else {
-                                        Dialog({message: '密码输入错误，请重新输入'});
+                                        Dialog({message: '请输入审核项目'});
                                     }
                                 } else {
-                                    Dialog({message: '请输入审核项目'});
+                                    Dialog({message: '请选择审核范围'});
                                 }
                             } else {
-                                Dialog({message: '请选择审核范围'});
+                                Dialog({message: '请输入正确审核对象：D11或者冲11'});
                             }
                         } else {
-                            Dialog({message: '请输入正确审核对象：D11或者冲11'});
+                            Dialog({message: '请输入审核对象'});
                         }
-                    } else {
-                        Dialog({message: '请输入审核对象'});
+                    }else if (auditNum ==49){
+                        setTimeout(() => {
+                            this.$router.push({
+                                path: '/checkStatus',
+                                query: {
+                                    valueNum: auditNum.data,
+                                    valueUser: this.valueUser
+                                }
+                            });
+                        }, 2000);
+                        Toast.success('登录成功');
+                    }else {
+                        Dialog({message: '请选择审核对象'});
+
                     }
                 } else {
                     Dialog({message: '请输入用户名'});
@@ -237,11 +259,16 @@
                 Toast.success('super');
             },
             quitBtn() {
-                window.opener = null;
-                window.open("", "_self");
-                window.close();
+                // window.opener = null;
+                // window.open("", "_self");
+                // window.close();
+                setTimeout(() => {
+                    this.$router.push({
+                        path: '/lastpage'
+                    });
+                }, 2000);
             },
-            registerBtn(){
+            registerBtn() {
                 setTimeout(() => {
                     this.$router.push({
                         path: '/register',
@@ -281,13 +308,14 @@
             text-align: center;
         }
 
-        .superBtn {
-            background-color: white;
-            color: lightgrey;
-            border: 0vw;
-        }
     }
 
+
+    .superBtn {
+        background-color: white;
+        color: lightgrey;
+        border: 0vw;
+    }
 
     /*.divinput {*/
     /*    height: 25vw;*/

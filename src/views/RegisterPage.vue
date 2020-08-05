@@ -26,14 +26,14 @@
                         label="用 户 名"
                         placeholder="请输入用户名"
                         @blur="userNameBlur"
-                        :rules="[{ validator: userNameValidator, message: '用户名必须为字母、数字、汉字或下划线'}]"
+                        :rules="[{ validator: userNameValidator, message: '用户名必须为字母、数字、汉字或下划线,且3位以上'}]"
                 />
                 <van-field
                         v-model="valuePs"
                         label="密    码"
                         type="password"
                         placeholder="请输入密码"
-                        :rules="[{ validator: passwordValidator,message:'密码必须为字母、数字或下划线'}]"
+                        :rules="[{ validator: passwordValidator,message:'密码必须为字母、数字或下划线,且6位以上'}]"
                 />
                 <van-field
                         v-model="valuePsConfirm"
@@ -97,23 +97,10 @@
                 nameNumber: -1,
                 checked: true,
                 emailFieldShow: true,
+                userNameStatu:false,
             };
         },
         created() {
-
-            //判断浏览器，是否支持localstorage
-            if (localStorage) {
-                this.storage = localStorage;
-            }
-
-            //刷新或下次登录后，保留上次登录信息；
-            if (this.storage.getItem("userName") != null) {
-                this.valueUser = this.storage.getItem("userName");
-            }
-
-            if (this.storage.getItem("password") != null) {
-                this.valuePs = this.storage.getItem("password");
-            }
 
         },
         methods: {
@@ -124,7 +111,7 @@
                         userName: this.valueUser,
                     }
                 });
-                if (tempReturn.data > 0) {
+                if (this.userNameStatu && tempReturn.data > 0) {
                     Toast.success('用户名可用');
                     this.nameNumber = 10;
                 } else {
@@ -144,11 +131,16 @@
             },
             //密码有效性验证，密码只能为字母、数字、下划线
             passwordValidator(val) {
-                return /^\w+$/.test(val);
+                return /^\w{6,}$/.test(val);
             },
             //用户名有效性验证，用户名只能为字母、数字、汉字、下划线
             userNameValidator(val) {
-                return /^[\u4E00-\u9FA5A-Za-z0-9_]+$/.test(val);
+                if (/^[\u4E00-\u9FA5A-Za-z0-9_]{3,}$/.test(val)){
+                    this.userNameStatu = true;
+                }else {
+                    this.userNameStatu =false;
+                }
+                return /^[\u4E00-\u9FA5A-Za-z0-9_]{3,}$/.test(val);
             },
             //email有效性验证
             emailValidator(val) {
@@ -211,7 +203,7 @@
                                             });
                                         }, 2000);
 
-                                        Toast.success('注册成功');
+                                        Toast.success('注册成功\n开始登录');
                                     } else {
                                         Dialog({message: '用户名有误，请重新输入'});
                                     }

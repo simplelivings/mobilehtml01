@@ -8,7 +8,10 @@
             <img src="../assets/applogo.png">
             <div class="textdiv2">AuditAll</div>
         </div>
-
+        <div style="height: 20vw"></div>
+        <div>
+            <a class="aLink" href="http://www.beian.miit.gov.cn/">备案号:辽ICP备20009953号</a>
+        </div>
 
     </div>
 
@@ -49,6 +52,10 @@
     }
 </script>
 <style scoped lang="less">
+    .aLink{
+        font-size: 2vw;
+        color: lightgrey;
+    }
     .home {
         background-color: white;
         margin-bottom: 0vw;

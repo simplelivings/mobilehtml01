@@ -7,10 +7,20 @@ import Login from "../views/Login";
 import SuperPage from "../views/SuperPage";
 import SuperPageInput from "../views/SuperPageInput";
 import RegisterPage from "../views/RegisterPage";
+import CheckStatus from "../views/CheckStatus";
+import CheckPage from "../views/CheckPage";
 
 Vue.use(VueRouter)
 
 const routes = [
+    {
+      path: '/checkPage',
+      component: CheckPage
+    },
+    {
+        path: '/checkStatus',
+        component: CheckStatus
+    },
     {
         path:'/register',
         component: RegisterPage
@@ -52,7 +62,7 @@ const routes = [
 
 const router = new VueRouter({
     mode: 'history',
-    base:'/dist/',
+    base:'/audit/',
     // base: process.env.BASE_URL,
     routes
 })
