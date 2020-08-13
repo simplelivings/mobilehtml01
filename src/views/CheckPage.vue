@@ -20,6 +20,9 @@
             <p>--检验项目</p>
         </div>
 
+
+
+
         <!--       1 检验过程选择-->
         <div class="divconform">
             <van-radio-group v-model="checkType" direction="horizontal">
@@ -43,8 +46,48 @@
 
         <!--    2    检验信息输入-->
         <div class="divinput">
+            <div class="divinputP">
+                <div style="width: 2vw"></div>
+                <p >零件号</p>
+                <div style="width: 7vw"></div>
+                <input class="partNumInputDatalist" id="partNumInputs" list="partNumInputList" v-model="valuePartNum" placeholder="请输入零件号"/>
+                <datalist id="partNumInputList" >
+                    <option value="A1766510001" />
+                    <option value="T21-2804711" />
+                    <option value="T21-3301051" />
+                    <option value="T21-5100301" />
+                    <option value="T21-5300301" />
+                    <option value="T21-5400103" />
+                    <option value="T21-5701211" />
+                    <option value="T21-6101075" />
+                    <option value="T21-6201075" />
+                    <option value="T21-8400131" />
+                    <option value="61625-95J05" />
+                    <option value="A2136370320" />
+                    <option value="A1766510001" />
+                    <option value="A2536371701" />
+                    <option value="A1766370135" />
+                    <option value="A2466360740" />
+                    <option value="A2056510900" />
+                    <option value="A2136120017" />
+                    <option value="A1776261500" />
+                    <option value="7372077-03" />
+                    <option value="64124 5NNOA" />
+                    <option value="77634 5NNOB" />
+                    <option value="74532 5NN1A" />
+                    <option value="76340 5NNOA" />
+                    <option value="74532 5NN1A" />
+                    <option value="78136 5NN1A" />
+                    <option value="78142 5NN1A" />
+                    <option value="76666 DF30A" />
+                    <option value="77662 DF30A" />
+                    <option value="509000483AA" />
+                </datalist>
+
+            </div>
+
             <van-cell-group>
-                <van-field class="field1" v-model="valuePartNum" label="零件号" placeholder="请输入零件号"/>
+<!--                <van-field class="field1" v-model="valuePartNum" label="零件号" placeholder="请输入零件号"/>-->
                 <van-field class="field1" v-model="valueProuductNum" label="生产数量" type="number" placeholder="请输入生产数量"/>
                 <van-field class="field1" v-model="valueCheckNum" label="检验数量" type="number" placeholder="请输入检验数量"/>
             </van-cell-group>
@@ -94,7 +137,7 @@
 
         <!--  6   保存按钮-->
         <div style="margin: 2vw">
-            <van-button type="primary" size="large" @click="saveBtn" :disabled="!quitShow">保存,并退出</van-button>
+            <van-button type="primary" size="large" @click="saveBtn" :disabled="!quitShow">保存并退出</van-button>
         </div>
 
 
@@ -125,6 +168,9 @@
                 checkNote: '',//检验信息备注
                 fileList: [],//检验图片存放列表
 
+                valueRen: '',//用户选择审核范围；
+                showPickerRen: false,
+                selectPartNum: '',
                 checkInfo: {//返回后端数据库检验信息
                     userName: '',
                     auditNum: '',
@@ -136,17 +182,16 @@
                     checkStatu: '',//检验结果
                     checkNote: '',//检验信息备注
                     produceTime: '',//生产时间
-                    checkTime:'',//检验时间,excel用
+                    checkTime: '',//检验时间,excel用
                 },
-
-                sendPic: {//检验图片：回传服务器的JOSN对象，经base64转码并去头部的。
+                checkPhoto: {//检验图片：回传服务器的JOSN对象，经base64转码并去头部的。
                     userName: '',
                     checkType: '',
                     partNum: '',
                     produceTime: '',
-                    auditNum: '',
                     checkPhotoList: [],
                 },
+                storage:'',
             };
         },
         created() {
@@ -171,6 +216,13 @@
             const _this = this;
         },
         methods: {
+            onConfirmRen(value) {
+                this.valueRen = value;
+
+                //将审核范围存入localStorage；
+                this.storage.setItem("valueRen", value);
+                this.showPickerRen = false;
+            },
             /*
             * 点击下一页，处理逻辑：
             * 1-处理本页内容
@@ -197,6 +249,7 @@
                     if (this.checkStatu > 0) {
                         if ((this.valuePartNum.length > 0) && (this.valueProuductNum.length > 0) && (this.valueCheckNum.length > 0)) {
 
+                            this.valuePartNum = this.valuePartNum.replace(/\//g, '-');
                             //处理本页内容
                             // 1.2 将各输入框数据，放入checkInfo中，返回后端用
                             this.checkInfo.userName = this.userName;
@@ -210,7 +263,7 @@
                             this.checkInfo.checkNote = this.checkNote;
                             let checkDate = new Date();
                             this.checkInfo.produceTime = checkDate.getHours() + "-" + parseInt(checkDate.getMinutes() / 10);
-                            this.checkInfo.checkTime = checkDate.getHours() + ":" + parseInt(checkDate.getMinutes() );
+                            this.checkInfo.checkTime = checkDate.getHours() + ":" + parseInt(checkDate.getMinutes());
 
                             // 1.3 将各种信息，放入sessionStorage中，页面切换调用
                             this.storage.setItem('checkType' + this.checkNum, this.checkType);
@@ -233,7 +286,7 @@
                             // 1.4 数据和图片分别存入数据库
                             var res = await this.$http.post('/check/insert', this.checkInfo);
                             if (this.fileList.length > 0) {
-                                this.uploadPic();
+                              await this.uploadPic();
                             }
 
                             //处理下一页内容
@@ -311,6 +364,7 @@
                     if (this.checkStatu > 0) {
                         if ((this.valuePartNum.length > 0) && (this.valueProuductNum.length > 0) && (this.valueCheckNum.length > 0)) {
 
+                            this.valuePartNum = this.valuePartNum.replace(/\//g, '-');
                             //处理本页内容
                             // 1.2 将各输入框数据，放入checkInfo中，返回后端用
                             this.checkInfo.userName = this.userName;
@@ -325,7 +379,7 @@
 
                             let checkDate = new Date();
                             this.checkInfo.produceTime = checkDate.getHours() + "-" + parseInt(checkDate.getMinutes() / 10);
-                            this.checkInfo.checkTime = checkDate.getHours() + ":" + parseInt(checkDate.getMinutes() );
+                            this.checkInfo.checkTime = checkDate.getHours() + ":" + parseInt(checkDate.getMinutes());
 
                             // 1.3 将各种信息，放入sessionStorage中，页面切换调用
                             this.storage.setItem('checkType' + this.checkNum, this.checkType);
@@ -447,14 +501,13 @@
 
                 //1 重置审核信息
 
-                this.sendPic.userName = this.userName;//设置发送页面用户名
-                this.sendPic.checkType = this.checkType;
-                this.sendPic.partNum = this.valuePartNum;
+                this.checkPhoto.userName = this.userName;//设置发送页面用户名
+                this.checkPhoto.checkType = this.checkType;
+                this.checkPhoto.partNum = this.valuePartNum;
 
                 let checkDate = new Date();
-                this.sendPic.produceTime = checkDate.getHours() + "-" + parseInt(checkDate.getMinutes() / 10);
-                this.sendPic.auditNum = this.auditNum;
-                this.sendPic.checkPhotoList = [];//重置发送照片列表
+                this.checkPhoto.produceTime = checkDate.getHours() + "-" + parseInt(checkDate.getMinutes() / 10);
+                this.checkPhoto.checkPhotoList = [];//重置发送照片列表
                 let tempImgList = [];//临时生成img的数组，用于画布canvas使用；
                 let promiseList = [];//promis数组，避免不同步；
 
@@ -470,25 +523,26 @@
                             tempImgList[i].onload = () => {
                                 let tConvas = document.createElement("canvas");//创建画布；
                                 let ctx = tConvas.getContext("2d");//设置画布类型
-                                tConvas.width = tempImgList[i].width;//设置画布宽度
-                                tConvas.height = tempImgList[i].height;//设置画布高度
+                                tConvas.width = tempImgList[i].width/5;//设置画布宽度
+                                tConvas.height = tempImgList[i].height/5;//设置画布高度
+                                console.log("size===="+tConvas.width*tConvas.height);
 
-                                ctx.drawImage(tempImgList[i], 0, 0, tempImgList[i].width, tempImgList[i].height);//将图片载入画布
+                                ctx.drawImage(tempImgList[i], 0, 0, tempImgList[i].width/5, tempImgList[i].height/5);//将图片载入画布
                                 let dataURL = tConvas.toDataURL();//得到画布的URL
 
                                 let s;
                                 s = dataURL.replace(/^data:image\/\w+;base64,/, "");//去base64头部
-                                this.sendPic.checkPhotoList.push(s);//将去头部base64图片，放入图片列表
+                                this.checkPhoto.checkPhotoList.push(s);//将去头部base64图片，放入图片列表
                                 resolve("ok");
                             };
                         });
 
                     } else {//2.2 object类型处理
-                        if (this.storage.getItem('picSrc' + this.num) != null) {//如果是object类型，从localStorage中取值
+                        if (this.storage.getItem('checkPicSrc' + this.checkNum) != null) {//如果是object类型，从localStorage中取值
                             let tempPicSrcList = [];//临时存放localStorage中的src的数组
                             let tempImgStorageList = [];
 
-                            tempPicSrcList = JSON.parse(this.storage.getItem('picSrc' + this.num));
+                            tempPicSrcList = JSON.parse(this.storage.getItem('checkPicSrc' + this.checkNum));
                             promiseList[i] = new Promise((resolve, reject) => {
 
                                 tempImgStorageList[i] = new Image();
@@ -496,15 +550,17 @@
 
                                 tempImgStorageList[i].onload = () => {
                                     let tConvas = document.createElement("canvas");//创建画布；
-                                    tConvas.width = tempImgStorageList[i].width;//设置画布宽度
-                                    tConvas.height = tempImgStorageList[i].height;//设置画布高度
+                                    tConvas.width = tempImgStorageList[i].width/5;//设置画布宽度
+                                    tConvas.height = tempImgStorageList[i].height/5;//设置画布高度
+
+                                    console.log("size===="+tConvas.width*tConvas.height);
 
                                     let ctx = tConvas.getContext("2d");//设置画布类型
-                                    ctx.drawImage(tempImgStorageList[i], 0, 0, tempImgStorageList[i].width, tempImgStorageList[i].height);//将图片载入画布
+                                    ctx.drawImage(tempImgStorageList[i], 0, 0, tempImgStorageList[i].width/5, tempImgStorageList[i].height/5);//将图片载入画布
                                     let dataURL = tConvas.toDataURL();//得到画布的URL
                                     let s;
                                     s = dataURL.replace(/^data:image\/\w+;base64,/, "");//去base64头部
-                                    this.sendPic.checkPhotoList.push(s);//将去头部base64图片，放入图片列表
+                                    this.checkPhoto.checkPhotoList.push(s);//将去头部base64图片，放入图片列表
                                     resolve("ok");
                                 };
                             });
@@ -513,7 +569,7 @@
 
                 }
                 Promise.all(promiseList).then(() => {
-                    this.$http.post('/checkphoto/insert', this.sendPic).then(function (resp) {
+                    this.$http.post('/checkphoto/insert', this.checkPhoto).then(function (resp) {
                         console.log("-----图片存入数据库------" + resp.data);
                     });
                 });
@@ -521,20 +577,22 @@
 
             //返回按钮，点击返回首页
             async clickReturn() {
-                // setTimeout(() => {
-                //     this.$router.push({
-                //         path: '/login'
-                //     });
-                // }, 1000);
-                var res = await this.$http.post('/check/testExcel', this.checkInfo);
+                setTimeout(() => {
+                    this.$router.push({
+                        path: '/login'
+                    });
+                }, 1000);
+                // console.log("valuePartNum===="+this.valuePartNum);
             },
 
             //保存按钮，点击后，保存最后一页数据，将数据发送至数据库，并跳转至尾页
-           async saveBtn() {
+            async saveBtn() {
                 //1.1 判断是否选择了各种数据
                 if (this.checkType > 0) {
                     if (this.checkStatu > 0) {
                         if ((this.valuePartNum.length > 0) && (this.valueProuductNum.length > 0) && (this.valueCheckNum.length > 0)) {
+                            this.valuePartNum = this.valuePartNum.replace(/\//g, '-');
+
                             this.quitShow = false;
                             //处理最后一页内容
                             // 1 将各输入框数据，放入checkInfo中，返回后端用
@@ -550,13 +608,13 @@
 
                             let checkDate = new Date();
                             this.checkInfo.produceTime = checkDate.getHours() + "-" + parseInt(checkDate.getMinutes() / 10);
-                            this.checkInfo.checkTime = checkDate.getHours() + ":" + parseInt(checkDate.getMinutes() );
+                            this.checkInfo.checkTime = checkDate.getHours() + ":" + parseInt(checkDate.getMinutes());
 
 
                             // 2 数据和图片分别存入数据库
                             var res = await this.$http.post('/check/insert', this.checkInfo);
                             if (this.fileList.length > 0) {
-                                this.uploadPic();
+                               await this.uploadPic();
                             }
 
                             // 3 跳转至最后一页
@@ -577,7 +635,8 @@
                 }
             },
         },
-    }
+    };
+
 </script>
 
 <style scoped lang="less">
@@ -591,6 +650,31 @@
         margin: 0vw;
         font-size: 4vw;
         color: chocolate;
+    }
+    .divinputP{
+        margin: 0;
+        margin-left: 9vw;
+        display: flex;
+        flex-direction: row;
+        justify-content: left;
+        font-size: 3.5vw;
+    }
+    .partNumInputDatalist{
+        margin: 0;
+        border-width: 0;
+        color: black;
+        input::-webkit-input-placeholder{
+            color:#fffafa;
+        }
+        input::-moz-placeholder{   /* Mozilla Firefox 19+ */
+            color:#fffafa;
+        }
+        input:-moz-placeholder{    /* Mozilla Firefox 4 to 18 */
+            color:#fffafa;
+        }
+        input:-ms-input-placeholder{  /* Internet Explorer 10-11 */
+            color:#fffafa;
+        }
     }
 
     .ptitle {

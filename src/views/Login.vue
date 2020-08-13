@@ -42,7 +42,7 @@
             <van-cell-group>
                 <van-field v-model="valueUser" label="用户名" placeholder="请输入用户名"/>
                 <van-field v-model="valuePs" label="密  码" type="password" placeholder="请输入密码"/>
-                <van-field v-model="valueObj" label="对  象" placeholder="请输入审核对象：如D11"/>
+                <van-field v-model="valueObj" label="对  象" v-show="valueObjShow" placeholder="请输入审核对象：如D11"/>
             </van-cell-group>
         </div>
 
@@ -56,6 +56,7 @@
                 label="范  围"
                 placeholder="点击选择班组或工段等"
                 @click="showPickerRen = true"
+                v-show="valueRenShow"
         />
         <van-popup v-model="showPickerRen" position="bottom">
             <van-picker
@@ -94,7 +95,6 @@
                     auditObj: '',
                     auditRen: '',
                     auditIte: '',
-                    userStatu:'0'
                 },//POST至服务器数据，含用户名和密码；
                 valueUser: '',//用户输入用户名；
                 valuePs: '',//用户输入密码；
@@ -106,6 +106,8 @@
                 columnsIte: ['分层审核', '质量检验', '安全检查', '现场检查', '工艺检查', '综合检查'],
                 showPickerRen: false,
                 showPickerIte: false,
+                valueObjShow:true,
+                valueRenShow:true,
             };
         },
         created() {
@@ -134,6 +136,13 @@
 
             if (this.storage.getItem("valueIte") != null) {
                 this.valueIte = this.storage.getItem("valueIte");
+                if (this.valueIte!="分层审核"){
+                    this.valueRenShow = false;
+                    this.valueObjShow = false;
+                }else {
+                    this.valueRenShow = true;
+                    this.valueObjShow = true;
+                }
             }
 
 
@@ -158,6 +167,13 @@
                 //将审核项目存入localStorage；
                 this.storage.setItem("valueIte", value);
                 this.showPickerIte = false;
+                if (this.valueIte!="分层审核"){
+                    this.valueRenShow = false;
+                    this.valueObjShow = false;
+                }else {
+                    this.valueRenShow = true;
+                    this.valueObjShow = true;
+                }
             },
 
             //登录按钮点击事件
@@ -173,8 +189,6 @@
                 this.model.auditRen = this.valueRen;
 
                 this.model.auditIte = this.valueIte;
-
-                this.model.userStatu = 1;
 
                 //向服务器发送请假，并将用户名与密码传给服务器，成功后服务器返回1，否则返回0；
                 var tempdata = await this.$http.post('basicinfo/login', this.model);
@@ -231,7 +245,7 @@
                     }else if (auditNum ==49){
                         setTimeout(() => {
                             this.$router.push({
-                                path: '/checkStatus',
+                                path: '/checkSelectPage',
                                 query: {
                                     valueNum: auditNum.data,
                                     valueUser: this.valueUser
@@ -240,8 +254,7 @@
                         }, 2000);
                         Toast.success('登录成功');
                     }else {
-                        Dialog({message: '请选择审核对象'});
-
+                        Dialog({message: '用户名或密码错误'});
                     }
                 } else {
                     Dialog({message: '请输入用户名'});

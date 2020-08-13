@@ -1,12 +1,10 @@
 <template>
     <div>
         <div class="home">
-            <van-button square color="#36C364" type="primary" size="large" @click="clickCheck" >
-                去检验
-            </van-button>
+
+            <van-button type="primary" size="large" @click="clickCheck">返回首页</van-button>
 
             <van-divider></van-divider>
-
             <p class="title" align="center">检验状态指示</p>
             <div class="viceTitleDiv">
                 <p class="viceTitleText">日期：{{checkDate}}</p>
@@ -39,6 +37,7 @@
                     </td>
                 </tr>
             </table>
+
 
         </div>
     </div>
@@ -75,8 +74,6 @@
             if (localStorage){
                 this.lStorage = localStorage;
             }
-            this.userName = this.lStorage.getItem("userName");
-            this.token = this.lStorage.getItem("auditWay");
             //获得当前日期，20xx年xx月xx日
             this.checkDate =new Date().getFullYear()+"年"+ new Date().getMonth()+"月"+ new Date().getDay()+"日";
             //获得当前小时
@@ -90,25 +87,23 @@
                 this.checkClass="晚班";
             }
 
-            this.$http.get('check/checkInfo', {
-                params: {
-                    userName: this.userName,
-                    auditWay: this.token,
-                }
-            }).then((resp)=>{
+            this.$http.get('check/checkInfo').then((resp)=>{
                 this.checkInfoList = resp.data.productInfoList;
+                this.checkDate =resp.data.checkDate;
             })
+
 
             setTimeout(()=>{
                 location.reload()
             },15000)
+
 
         },
         methods: {
             clickCheck(){
                 setTimeout(() => {
                     this.$router.push({
-                        path: '/checkPage',
+                        path: '/login',
                     });
                 }, 2000);
                 Toast.success('跳转成功');

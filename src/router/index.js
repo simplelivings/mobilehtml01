@@ -9,28 +9,33 @@ import SuperPageInput from "../views/SuperPageInput";
 import RegisterPage from "../views/RegisterPage";
 import CheckStatus from "../views/CheckStatus";
 import CheckPage from "../views/CheckPage";
+import CheckSelectPage from "../views/CheckSelectPage";
 
 Vue.use(VueRouter)
 
 const routes = [
     {
-      path: '/checkPage',
-      component: CheckPage
+        path: '/checkSelectPage',
+        component: CheckSelectPage
+    },
+    {
+        path: '/checkPage',
+        component: CheckPage
     },
     {
         path: '/checkStatus',
         component: CheckStatus
     },
     {
-        path:'/register',
+        path: '/register',
         component: RegisterPage
     },
     {
-        path:'/login',
+        path: '/login',
         component: Login
     },
     {
-        path:'/lastpage',
+        path: '/lastpage',
         component: LastPage
     },
     {
@@ -62,9 +67,13 @@ const routes = [
 
 const router = new VueRouter({
     mode: 'history',
-    base:'/audit/',
+    base: '/audit/',
     // base: process.env.BASE_URL,
     routes
+    // routes: [
+    //     { path: '*',
+    //         component: (resolve) => require(['@/page/error/404'], resolve)}
+    // ]
 })
 
 export default router
