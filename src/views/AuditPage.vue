@@ -95,7 +95,7 @@
             <div style="width: 5vw">{{eunconformNum}}</div>
             <van-icon name="clock" size="6vw" color="#D3D3D3"/>
             <!--审核项目总数，created时，由auditItem回传-->
-            <div style="width: 5vw">{{econformNum+eunconformNum}}/{{totalNum}}</div>
+            <div style="width: 5vw">{{etotalNum}}/{{totalNum}}</div>
         </div>
     </div>
 
@@ -104,6 +104,7 @@
 <script charset="UTF-8">
     import axios from "axios";
     import Toast from "vant/lib/toast";
+    import http from "../../http";
 
     export default {
         data() {
@@ -114,17 +115,18 @@
                 auditNum: '',//审核表编号
                 userName: '',//用户名
                 auditItem: '',//审核内容
-                token: '',
+                token: '',//验证令牌，key为用户名
                 lastShow: true,
                 nextShow: true,
                 quitShow: false,
                 totalNum: 0,//审核项目总数
                 econformNum: 0,//符合项目总数
                 eunconformNum: 0,//不符合项目总数
+                etotalNum: 0,
+                tempRadio: 0,
                 radio: '0',//符合性判断，vant的单选框返回值
                 storage: '',//存储数据至localStorage
                 message: '',//审核发现
-                // file: '',//vant的uploader返回文件
                 auditInfo: {//审核内容：回传至服务器的JSON对象，全部为审核内容
                     userName: '',
                     auditFind: '',
@@ -144,18 +146,16 @@
                     finishNum: ''
                 },
                 fileList: [],
-                lastNextClickStatu: false,
-                firstLastClickStatu: false,
+                lastClickStatu: false,
+                nextClickStatu: false,
             };
         },
-        created() {
+        async created() {
             //判断浏览器，是否支持localstorage
             if (sessionStorage) {
                 this.storage = sessionStorage;
             }
             this.lStorage = localStorage;
-
-            // this.storage.clear();
 
             //从localStorage获取审核表编号和用户名
             this.userName = this.lStorage.getItem("userName");
@@ -173,9 +173,13 @@
 
             //保留this,也可以用箭头函数
             const _this = this;
+            this.econformNum = 0;
+            this.eunconformNum = 0;
+            let c = this.econformNum + this.eunconformNum;
 
-            //AXIOS获取审核项目,共几处？
-            this.$http.get('/audititem/showone', {
+            // AXIOS获取审核项目,共几处？
+            this.$http.get('audititem/showone', {
+                headers: {'token': this.token},
                 params: {
                     page: this.num,
                     num: this.auditNum,
@@ -188,7 +192,6 @@
             });
 
         }, mounted() {
-            console.log("=======mounted======" + "mounted");
         },
         methods: {
             //点击下一页
@@ -196,6 +199,8 @@
 
                 const _this = this;
                 this.lastShow = true;
+                this.lastClickStatu = false;
+                this.nextClickStatu = true;
 
                 if (this.radio > 0) {//是否选择了符合性：符合-1，不符合-2，默认-0
                     this.auditInfo.auditPage = this.num;
@@ -203,24 +208,24 @@
                     this.auditInfo.auditFind = this.message;
                     this.auditInfo.userName = this.userName;//用户名传入对象中，有点重复
                     this.auditInfo.auditNum = this.auditNum;
-                    console.log("-----by next---num--" + this.num);
+
                     //符合性判断与审核发现，存入localStorage
                     this.storage.setItem('auditCon' + this.num, this.radio);
                     this.storage.setItem('auditFind' + this.num, this.message);
-                    console.log("-----by next---storage--" + this.num + "==" + this.storage.getItem('auditFind' + this.num));
 
 
                     // 获取localStorage中图片数据，并存入fileList中(点击上一页后，再点击下一页，如果未
                     // 重新选择图片时使用
                     if (this.fileList.length == 0) {
                         if (this.storage.getItem('pic' + this.num + 0) != null) {
-                            var jsons = this.storage.getItem('pic' + this.num);
+                            var jsons = this.storage.getiItem('pic' + this.num);
                             this.fileList = JSON.parse(jsons);
                         }
                     }
 
                     // 数据存入数据库
-                    var res = await this.$http.post('/auditinfo/insert', this.auditInfo, {headers: {'token': this.token}});
+                    var res = await this.$http.post('/auditinfo/insert', this.auditInfo,{headers:{
+                            'token':this.token}});
                     this.conformRadio.conformNum = res.data.conformNum;
                     this.conformRadio.unconformNum = res.data.unconformNum;
                     this.conformRadio.finishNum = res.data.finishNum;
@@ -228,8 +233,8 @@
                     this.eunconformNum = this.conformRadio.unconformNum;
 
                     // 图片存入数据库
-                    if (this.fileList.length >= 0) {
-                        this.uploadPic();
+                    if (this.fileList.length > 0) {
+                        await this.uploadPic();
                     }
 
                     if (this.num == this.totalNum - 1) {
@@ -243,6 +248,7 @@
                         this.num++;//页码自增
                         this.storage.setItem('num', this.num);//页码存入storage
                         this.$http.get('/audititem/showone', {
+                            headers: {'token': this.token},
                             params: {
                                 page: this.num,
                                 num: this.auditNum,
@@ -275,6 +281,7 @@
                     //获取localStorage中符合性判断，并重置radio值；
                     if (this.storage.getItem('auditCon' + this.num) > 0) {
                         this.radio = this.storage.getItem('auditCon' + this.num);
+                        this.tempRadio = this.radio;
                     }
 
 
@@ -293,6 +300,8 @@
             async LastPageClick() {
                 const _this = this;
                 this.nextShow = true;
+                this.lastClickStatu = true;
+                this.nextClickStatu = false;
 
                 if (this.radio > 0) {
                     //本页内容
@@ -302,11 +311,9 @@
                     this.auditInfo.userName = this.userName;//用户名传入对象中，有点重复
                     this.auditInfo.auditNum = this.auditNum;
 
-                    console.log("-----by last---num--" + this.num);
                     //符合性判断与审核发现，存入localStorage
                     this.storage.setItem('auditCon' + this.num, this.radio);
                     this.storage.setItem('auditFind' + this.num, this.message);
-                    console.log("-----by last---storage--" + this.num + "==" + this.storage.getItem('auditFind' + this.num));
 
                     // 获取localStorage中图片数据，并存入fileList中(点击上一页后，再点击下一页，如果未
                     // 重新选择图片时使用)
@@ -318,7 +325,8 @@
                     }
 
                     // 数据存入数据库
-                    var res = await this.$http.post('/auditinfo/insert', this.auditInfo);
+                    var res = await this.$http.post('/auditinfo/insert', this.auditInfo,{headers:{
+                            'token':this.token}});
                     this.conformRadio.conformNum = res.data.conformNum;
                     this.conformRadio.unconformNum = res.data.unconformNum;
                     this.conformRadio.finishNum = res.data.finishNum;
@@ -326,8 +334,8 @@
                     this.eunconformNum = this.conformRadio.unconformNum;
 
                     // 图片存入数据库
-                    if (this.fileList.length >= 0) {
-                        this.uploadPic();
+                    if (this.fileList.length > 0) {
+                        await this.uploadPic();
                     }
 
 
@@ -338,6 +346,7 @@
                         this.storage.setItem('num', this.num);
                         this.storage.setItem('clickNum', this.clickNum);
                         this.$http.get('/audititem/showone', {
+                            headers: {'token': this.token},
                             params: {
                                 page: this.num,
                                 num: this.auditNum,
@@ -347,7 +356,6 @@
                         }).then(function (resp) {
                             _this.auditItem = resp.data.auditItem;
                         });
-                        console.log("--------By last--num-----" + this.num);
                     } else {
                         Toast.fail('已是第一页')
                         this.lastShow = false;
@@ -359,7 +367,6 @@
 
                     //获取localStorage中图片数据，并存入fileList中
                     if (this.storage.getItem('pic' + this.num) != null) {
-                        console.log("--------By last 增加-------" + this.num);
                         var jsons = this.storage.getItem('pic' + this.num);
                         this.fileList = JSON.parse(jsons);
                     }
@@ -367,6 +374,7 @@
                     //获取localStorage中符合性判断，并重置radio值；
                     if (this.storage.getItem('auditCon' + this.num) > 0) {
                         this.radio = this.storage.getItem('auditCon' + this.num);
+                        this.tempRadio = this.radio;
                     }
 
                     //获取localStorage中符合性判断，并重置message值；
@@ -380,6 +388,8 @@
                 }
             },
             clickReturn() {
+                this.$http.get('basicinfo/clearData',{params: {userName: this.userName}});
+
                 setTimeout(() => {
                     this.$router.push({
                         path: '/login'
@@ -414,6 +424,7 @@
             },
             //图片转成base64，并发送至服务器。
             uploadPic() {
+                this.sleep(0.2);
 
                 //1 重置审核信息
                 this.sendPic.auditPhotoList = [];//重置发送照片列表
@@ -479,13 +490,14 @@
 
                 }
                 Promise.all(promiseList).then(() => {
-                    this.$http.post('/auditphoto/insert', this.sendPic).then(function (resp) {
-                        console.log("-----图片存入数据库------" + resp.data);
+                    this.$http.post('/auditphoto/insert', this.sendPic,{headers:{
+                        'token':this.token}}).then(function (resp) {
                     });
                 });
             },
             //图片转成base64，并发送至服务器。
             uploadPicAndExcel() {
+                this.sleep(0.2);
 
                 //1 重置审核信息
                 this.sendPic.auditPhotoList = [];//重置发送照片列表
@@ -551,69 +563,133 @@
 
                 }
                 Promise.all(promiseList).then(() => {
-                    this.$http.post('/auditphoto/insertandexcel', this.sendPic).then(function (resp) {
-                        console.log("-----图片存入数据库------" + resp.data);
+                    this.$http.post('/auditphoto/insertandexcel', this.sendPic,{headers:{
+                            'token':this.token}}).then(function (resp) {
                     });
                 });
             },
 
             conformClick() {//符合点击事件，控制底部计数变化
                 //1 没到最后一页，数据库未满，在数据库基础上+1
-
-                this.econformNum = this.conformRadio.conformNum + 1;
-
-
-                //3 如果已审核信息的不符合数量>0,则不符合数量-1，否则不符合数量为0
-                if (this.conformRadio.finishNum < this.totalNum) {
-                    if (this.conformRadio.unconformNum > 0) {
-                        this.eunconformNum = this.conformRadio.unconformNum;
-                    } else {
-                        this.eunconformNum = 0;
-                    }
+                // console.log("radio===" + this.radio);
+                if ((this.lastClickStatu || this.nextClickStatu) && (this.tempRadio == 1)) {
+                    this.econformNum = this.conformRadio.conformNum;
                 } else {
-                    if (this.conformRadio.unconformNum > 0) {
-                        this.eunconformNum = this.conformRadio.unconformNum - 1;
+                    if (this.conformRadio.conformNum == this.totalNum) {
+                        this.econformNum = this.conformRadio.conformNum;
                     } else {
-                        this.eunconformNum = 0;
+                        this.econformNum = this.conformRadio.conformNum + 1;
                     }
                 }
 
+                //3 如果已审核信息的不符合数量>0,则不符合数量-1，否则不符合数量为0
+                if ((this.nextClickStatu || this.lastClickStatu) && (this.radio == 1)) {
+                    this.eunconformNum = this.conformRadio.unconformNum;
+                } else {
+                    if (this.conformRadio.finishNum < this.totalNum) {
+                        if (this.lastClickStatu) {
+                            this.eunconformNum = this.conformRadio.unconformNum - 1;
+                        } else {
+                            if (this.conformRadio.unconformNum > 0) {
+                                this.eunconformNum = this.conformRadio.unconformNum;
+                            } else {
+                                this.eunconformNum = 0;
+                            }
+                        }
+                    } else {
+                        if (this.conformRadio.unconformNum > 0) {
+                            this.eunconformNum = this.conformRadio.unconformNum - 1;
+                        } else {
+                            this.eunconformNum = 0;
+                        }
+                    }
+                }
+
+
+                if ((this.econformNum + this.eunconformNum) == 10) {
+                    this.etotalNum = 1;
+                } else {
+                    this.etotalNum = this.econformNum + this.eunconformNum;
+                }
+                // this.nextClickStatu = false;
+                // this.lastClickStatu = false;
             },
             unconformClick() {//不符合点击事件，控制底部计数变化
 
-                this.eunconformNum = this.conformRadio.unconformNum + 1;
-
-
-                if (this.conformRadio.finishNum < this.totalNum) {
-                    if (this.conformRadio.conformNum > 0) {
-                        this.econformNum = this.conformRadio.conformNum;
-                    } else {
-                        this.econformNum = 0;
-                    }
+                if ((this.lastClickStatu || this.nextClickStatu) && (this.tempRadio == 2)) {
+                    this.eunconformNum = this.conformRadio.unconformNum;
                 } else {
-                    if (this.conformRadio.conformNum > 0) {
-                        this.econformNum = this.conformRadio.conformNum - 1;
+                    if (this.conformRadio.unconformNum == this.totalNum) {
+                        this.eunconformNum = this.conformRadio.unconformNum;
                     } else {
-                        this.econformNum = 0;
+                        this.eunconformNum = this.conformRadio.unconformNum + 1;
                     }
+                }
+
+                if ((this.lastClickStatu || this.nextClickStatu) && (this.tempRadio == 2)) {
+                    this.econformNum = this.conformRadio.conformNum;
+                } else {
+                    if (this.conformRadio.finishNum < this.totalNum) {
+                        if (this.lastClickStatu) {
+                            this.econformNum = this.conformRadio.conformNum - 1;
+                        } else {
+                            if (this.conformRadio.conformNum > 0) {
+                                this.econformNum = this.conformRadio.conformNum;
+                            } else {
+                                this.econformNum = 0;
+                            }
+                        }
+                    } else {
+                        if (this.conformRadio.conformNum > 0) {
+                            this.econformNum = this.conformRadio.conformNum - 1;
+                        } else {
+                            this.econformNum = 0;
+                        }
+                    }
+                }
+                if ((this.econformNum + this.eunconformNum) == 1) {
+                    this.etotalNum = 1;
+                } else {
+                    this.etotalNum = this.econformNum + this.eunconformNum;
                 }
             },
             ncconformClick() {
 
-                this.eunconformNum = this.conformRadio.unconformNum + 1;
-
-                if (this.conformRadio.finishNum < this.totalNum) {
-                    if (this.conformRadio.conformNum > 0) {
-                        this.econformNum = this.conformRadio.conformNum;
-                    } else {
-                        this.econformNum = 0;
-                    }
+                if ((this.lastClickStatu || this.nextClickStatu) && (this.tempRadio == 3)) {
+                    this.eunconformNum = this.conformRadio.unconformNum;
                 } else {
-                    if (this.conformRadio.conformNum > 0) {
-                        this.econformNum = this.conformRadio.conformNum - 1;
+                    if (this.conformRadio.unconformNum == this.totalNum) {
+                        this.eunconformNum = this.conformRadio.unconformNum;
                     } else {
-                        this.econformNum = 0;
+                        this.eunconformNum = this.conformRadio.unconformNum + 1;
                     }
+                }
+
+                if ((this.lastClickStatu || this.nextClickStatu) && (this.tempRadio == 3)) {
+                    this.econformNum = this.conformRadio.conformNum;
+                } else {
+                    if (this.conformRadio.finishNum < this.totalNum) {
+                        if (this.lastClickStatu) {
+                            this.econformNum = this.conformRadio.conformNum - 1;
+                        } else {
+                            if (this.conformRadio.conformNum > 0) {
+                                this.econformNum = this.conformRadio.conformNum;
+                            } else {
+                                this.econformNum = 0;
+                            }
+                        }
+                    } else {
+                        if (this.conformRadio.conformNum > 0) {
+                            this.econformNum = this.conformRadio.conformNum - 1;
+                        } else {
+                            this.econformNum = 0;
+                        }
+                    }
+                }
+                if ((this.econformNum + this.eunconformNum) == 1) {
+                    this.etotalNum = 1;
+                } else {
+                    this.etotalNum = this.econformNum + this.eunconformNum;
                 }
             },
             async clickQuit() {
@@ -627,20 +703,17 @@
                     this.auditInfo.auditNum = this.auditNum;
 
                     // 数据存入数据库
-                    var res = await this.$http.post('/auditinfo/insert', this.auditInfo);
+                    var res = await this.$http.post('/auditinfo/insert', this.auditInfo,{headers:{
+                        'token':this.token}});
 
                     // 图片存入数据库并转成excel
-                    if (this.fileList.length >= 0) {
+                    if (this.fileList.length > 0) {
                         await this.uploadPicAndExcel();
                     }
 
                 }
 
                 if ((this.conformRadio.finishNum > 0 && ((this.conformRadio.finishNum) == this.totalNum)) || (this.num == this.totalNum)) {
-
-                    //审核信息数据库与审核项目数据库大小一致，或最后一页，发送excel与发送请求，并退出网页
-                    //通知服务器，把数据写入excel表中
-                    // await this.$http.post('auditinfo/generate', this.auditInfo);
 
                     setTimeout(() => {
                         this.$router.push({
@@ -650,6 +723,14 @@
 
                 } else {
                     Toast.fail('请判断符合性');
+                }
+            },
+            sleep(n) {
+                var start = new Date().getTime();
+                while (true) {
+                    if (new Date().getTime() - start > n * 1000) {
+                        break;
+                    }
                 }
             },
 

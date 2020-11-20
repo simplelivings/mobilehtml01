@@ -10,10 +10,20 @@ import RegisterPage from "../views/RegisterPage";
 import CheckStatus from "../views/CheckStatus";
 import CheckPage from "../views/CheckPage";
 import CheckSelectPage from "../views/CheckSelectPage";
+import PasswordPage from "../views/PasswordPage";
+import ValidatePassword from "../views/ValidatePassword";
 
 Vue.use(VueRouter)
 
 const routes = [
+    {
+        path: '/validate/:id/',
+        component: ValidatePassword
+    },
+    {
+        path: '/passwordPage',
+        component: PasswordPage
+    },
     {
         path: '/checkSelectPage',
         component: CheckSelectPage
@@ -67,8 +77,8 @@ const routes = [
 
 const router = new VueRouter({
     mode: 'history',
-    base: '/audit/',
-    // base: process.env.BASE_URL,
+    // base: '/audit/',
+    base: process.env.BASE_URL,
     routes
     // routes: [
     //     { path: '*',

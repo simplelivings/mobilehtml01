@@ -201,7 +201,6 @@
                 //向服务器发送请求，并将用户名与密码传给服务器，成功后服务器返回1，否则返回0；
                 var auditNum = await this.$http.post('basicinfo/superlogin', this.model,{contentType:'application/x-www-form-urlencoded;charset=UTF-8'});
                 this.storage.setItem("auditNumSup",auditNum.data);
-                console.log("=========auditNum========"+auditNum.data);
 
                 //判断服务器返回值，成功后跳转至审核页面，失败后显示失败提示信息；
                 if (this.valueUser.length > 0) {
@@ -221,7 +220,7 @@
                                         Toast.success('登录成功');
                                     } else {
                                         Dialog({message: '密码输入错误，请重新输入'});
-                                        console.log("--you can not log in--");
+                                        // console.log("--you can not log in--");
                                     }
                                 } else {
                                     Dialog({message: '请输入审核项目'});
@@ -238,7 +237,6 @@
                 } else {
                     Dialog({message: '请输入用户名'});
                 }
-                console.log("----" + this.model.userName);
             },
             quitBtn() {
                 window.opener = null;

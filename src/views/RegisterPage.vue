@@ -49,13 +49,6 @@
         </div>
 
 
-        <van-cell value="是否用邮箱接收审核表? 绿：接收，红：不接收">
-            <template #right-icon>
-                <van-switch v-model="checked" @click="switchClick" active-color="#36C364" inactive-color="#ee0a24"
-                            size="24"/>
-            </template>
-        </van-cell>
-
         <van-form>
             <van-field
                     v-model="emailAddress"
@@ -64,7 +57,17 @@
                     placeholder="请输入邮箱"
                     :rules="[{ validator: emailValidator, message: '请输入正确邮箱地址' }]"
             />
+
+            <van-field v-model="corpName" label="公    司" placeholder="请输入公司名称"/>
+
         </van-form>
+
+        <van-cell value="是否用邮箱接收审核表? 绿：接收，红：不接收">
+            <template #right-icon>
+                <van-switch v-model="checked" @click="switchClick" active-color="#36C364" inactive-color="#ee0a24"
+                            size="24"/>
+            </template>
+        </van-cell>
 
 
         <div style="margin: 2vw">
@@ -88,12 +91,16 @@
                     password: '',
                     familyName: '',
                     emailAddress: '',
+                    userRight: '',
+                    corpName:'',
                 },//POST至服务器数据，含用户名和密码；
                 valueUser: '',//用户输入用户名；
                 valuePs: '',//用户输入密码；
                 valuePsConfirm: '',
                 familyName: '',
                 emailAddress: '',
+                corpName: '',
+                userRight: 2,
                 nameNumber: -1,
                 checked: true,
                 emailFieldShow: true,
@@ -101,6 +108,11 @@
             };
         },
         created() {
+            //判断浏览器，是否支持localstorage
+            if (localStorage) {
+                this.storage = localStorage;
+            }
+
 
         },
         methods: {
@@ -151,9 +163,11 @@
             switchClick() {
                 console.log("checked========" + this.checked)
                 if (this.checked) {
-                    this.emailFieldShow = false;
+                    this.userRight = 0;
+                    console.log("userRight========" + this.userRight)
                 } else {
-                    this.emailFieldShow = true;
+                    this.userRight = 2;
+                    console.log("userRight========" + this.userRight)
                 }
             },
             //登录按钮点击事件
@@ -167,6 +181,16 @@
                 this.model.familyName = this.familyName;
 
                 this.model.emailAddress = this.emailAddress;
+
+                this.model.userRight = this.userRight;
+
+                this.model.corpName = this.corpName;
+
+                //将用户名存入localStorage；
+                this.storage.setItem("userName", this.valueUser);
+
+                //将密码存入localStorage；
+                this.storage.setItem("password", this.valuePs);
 
                 //判断服务器返回值，成功后跳转至审核页面，失败后显示失败提示信息；
                 if (this.valueUser.length > 0) {
@@ -224,7 +248,6 @@
                 }
 
 
-                console.log("----" + this.model.userName);
             },
             quitBtn() {
                 window.opener = null;
@@ -232,7 +255,7 @@
                 window.close();
             },
             onFailed(errorInfo) {
-                console.log('failed', errorInfo);
+                // console.log('failed', errorInfo);
             },
         },
 

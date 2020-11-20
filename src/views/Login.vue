@@ -72,6 +72,10 @@
             <van-button type="primary" size="large" @click="loginBtn">登 录</van-button>
         </div>
 
+        <div style="margin: 2vw">
+            <van-button type="primary" size="large" @click="passwordBtn">忘记密码</van-button>
+        </div>
+
         <!--        分割-->
         <div style="height: 60vw"></div>
 
@@ -95,6 +99,7 @@
                     auditObj: '',
                     auditRen: '',
                     auditIte: '',
+                    userStatu: '',
                 },//POST至服务器数据，含用户名和密码；
                 valueUser: '',//用户输入用户名；
                 valuePs: '',//用户输入密码；
@@ -175,6 +180,13 @@
                     this.valueObjShow = true;
                 }
             },
+            passwordBtn(){
+                setTimeout(() => {
+                    this.$router.push({
+                        path: '/passwordPage',
+                    });
+                }, 2000);
+            },
 
             //登录按钮点击事件
             async loginBtn() {
@@ -190,12 +202,18 @@
 
                 this.model.auditIte = this.valueIte;
 
-                //向服务器发送请假，并将用户名与密码传给服务器，成功后服务器返回1，否则返回0；
-                var tempdata = await this.$http.post('basicinfo/login', this.model);
+                this.model.userStatu = 1;
+
+                //向服务器发送请求，并将用户名与密码传给服务器，成功后返回auditNum；
+                var tempdata = await this.$http.post('basicinfo/login', this.model,{headers:{
+                    'token':'cccc0000000'
+                    }});
 
                 var auditNum = tempdata.data.auditNum;
 
-                var token = tempdata.data.token;
+                // var token = tempdata.data.token;
+                var token = tempdata.headers['token'];
+
 
                 //将token放入localStorage中
                 this.storage.setItem("auditWay", token);
@@ -212,9 +230,10 @@
                 //将审核对象存入localStorage；
                 this.storage.setItem("valueObj", this.valueObj);
 
+
                 //判断服务器返回值，成功后跳转至审核页面，失败后显示失败提示信息；
                 if (this.valueUser.length > 0) {
-                    if (auditNum >=0 && auditNum <=34){
+                    if (auditNum >=0 && auditNum <=34){//分层审核
                         if (this.valueObj.length > 0) {
                             var reg = new RegExp(/冲|D|焊|W|剪|C|M|钣|E|设备|工装|L|物流|质量|Q/i);
                             if (reg.test(this.valueObj)) {
@@ -242,7 +261,7 @@
                         } else {
                             Dialog({message: '请输入审核对象'});
                         }
-                    }else if (auditNum ==49){
+                    }else if (auditNum ==49){//质量检验
                         setTimeout(() => {
                             this.$router.push({
                                 path: '/checkSelectPage',
@@ -253,15 +272,26 @@
                             });
                         }, 2000);
                         Toast.success('登录成功');
-                    }else {
-                        Dialog({message: '用户名或密码错误'});
+                    }else if (auditNum == 101){//已有用户
+                        Dialog({message: '重复登录'});
+                    }else if (auditNum == 103){
+                        Dialog({message: '密码输入次数过多，请24小时后重试或重置密码'});
+                    }else if (auditNum == 102){
+                        Dialog({message: '用户名不存在'});
+                    }
+                    else if (auditNum == 105){
+                        Dialog.alert({
+                            message: '账户已过续费周期，请点击确定，去续费',
+                        }).then(() => {
+                            // on close
+                        });
+                    }
+                    else {
+                        Dialog({message: '密码错误'});
                     }
                 } else {
                     Dialog({message: '请输入用户名'});
                 }
-
-
-                console.log("----" + this.model.userName);
             },
             superBtn() {
                 setTimeout(() => {
@@ -272,14 +302,8 @@
                 Toast.success('super');
             },
             quitBtn() {
-                // window.opener = null;
-                // window.open("", "_self");
-                // window.close();
-                setTimeout(() => {
-                    this.$router.push({
-                        path: '/lastpage'
-                    });
-                }, 2000);
+                //清除用户登录与审核信息，并退出窗口，未清除redis信息
+                this.$quitAudit(this.valueUser);
             },
             registerBtn() {
                 setTimeout(() => {
@@ -288,6 +312,15 @@
                     });
                 }, 2000);
                 Toast.success('开始注册');
+            },sleep(n) {
+                var start = new Date().getTime();
+                console.log('休眠前：' + start);
+                while (true) {
+                    if (new Date().getTime() - start > n*1000) {
+                        break;
+                    }
+                }
+                console.log('休眠后：' + new Date().getTime());
             },
         },
 

@@ -162,7 +162,7 @@
 
             var slist = new Array(50);
             this.valueInputList = slist;
-            console.log("======length====" + this.valueInputList.length);
+            // console.log("======length====" + this.valueInputList.length);
         },
         methods: {
             loginBtnNextPage() {
@@ -207,7 +207,6 @@
 
                         //处理下页内容
                         this.inputNum += 8;
-                        console.log("======next=inputNum======" + this.inputNum);
                         let tempI = 0;
                         this.valueInput1 = this.valueInputList[tempI + this.inputNum];
                         tempI++;
@@ -345,7 +344,6 @@
 
 
                 if (this.auditItem.auditItemList[2] != '') {
-                    console.log("===========" + this.auditItem.auditItemList[2]);
                     //数据传至数据库
                     await this.$http.post('/audititem/insert', this.auditItem);
 

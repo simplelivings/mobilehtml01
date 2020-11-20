@@ -153,7 +153,7 @@
             return {
                 userName: '',//用户名
                 auditNum: '',//审核表编号
-                token: '',//token，暂时没用
+                token: '',//验证令牌，key为用户名
                 checkNum: 1,//页面编号
                 storage: '',//sessionStorage
                 lastShow: true,//上一页是否显示
@@ -284,7 +284,8 @@
                             }
 
                             // 1.4 数据和图片分别存入数据库
-                            var res = await this.$http.post('/check/insert', this.checkInfo);
+                            var res = await this.$http.post('/check/insert', this.checkInfo,{headers:{
+                                'token':this.token}});
                             if (this.fileList.length > 0) {
                               await this.uploadPic();
                             }
@@ -401,9 +402,10 @@
 
                             // 1.4 数据和图片分别存入数据库
                             //1.4.1 数据存入数据库
-                            var res = await this.$http.post('/check/insert', this.checkInfo);
+                            var res = await this.$http.post('/check/insert', this.checkInfo,{headers:{
+                                'token':this.token}});
                             if (this.fileList.length > 0) {
-                                this.uploadPic();
+                              await this.uploadPic();
                             }
 
                             //处理下一页内容
@@ -477,7 +479,6 @@
                     this.storage.setItem('checkPicSrc' + this.checkNum, JSON.stringify(picSrc));//src数组放入localStorage中
                 }
 
-
             },
             //删除图片后，将sessionStorage中fileList内容更新
             onDelete(file) {
@@ -499,6 +500,7 @@
                 //     auditNum:'',
                 //     auditPhotoList: [],
 
+                this.sleep(0.5);
                 //1 重置审核信息
 
                 this.checkPhoto.userName = this.userName;//设置发送页面用户名
@@ -525,7 +527,6 @@
                                 let ctx = tConvas.getContext("2d");//设置画布类型
                                 tConvas.width = tempImgList[i].width/5;//设置画布宽度
                                 tConvas.height = tempImgList[i].height/5;//设置画布高度
-                                console.log("size===="+tConvas.width*tConvas.height);
 
                                 ctx.drawImage(tempImgList[i], 0, 0, tempImgList[i].width/5, tempImgList[i].height/5);//将图片载入画布
                                 let dataURL = tConvas.toDataURL();//得到画布的URL
@@ -553,8 +554,6 @@
                                     tConvas.width = tempImgStorageList[i].width/5;//设置画布宽度
                                     tConvas.height = tempImgStorageList[i].height/5;//设置画布高度
 
-                                    console.log("size===="+tConvas.width*tConvas.height);
-
                                     let ctx = tConvas.getContext("2d");//设置画布类型
                                     ctx.drawImage(tempImgStorageList[i], 0, 0, tempImgStorageList[i].width/5, tempImgStorageList[i].height/5);//将图片载入画布
                                     let dataURL = tConvas.toDataURL();//得到画布的URL
@@ -568,21 +567,24 @@
                     }
 
                 }
+
                 Promise.all(promiseList).then(() => {
-                    this.$http.post('/checkphoto/insert', this.checkPhoto).then(function (resp) {
-                        console.log("-----图片存入数据库------" + resp.data);
+                    this.$http.post('/checkphoto/insert', this.checkPhoto,{headers:{
+                            'token':this.token}}).then(function (resp) {
                     });
                 });
             },
 
             //返回按钮，点击返回首页
             async clickReturn() {
+
+                this.$http.get('basicinfo/clearData',{params: {userName: this.userName}});
+
                 setTimeout(() => {
                     this.$router.push({
                         path: '/login'
                     });
                 }, 1000);
-                // console.log("valuePartNum===="+this.valuePartNum);
             },
 
             //保存按钮，点击后，保存最后一页数据，将数据发送至数据库，并跳转至尾页
@@ -610,14 +612,15 @@
                             this.checkInfo.produceTime = checkDate.getHours() + "-" + parseInt(checkDate.getMinutes() / 10);
                             this.checkInfo.checkTime = checkDate.getHours() + ":" + parseInt(checkDate.getMinutes());
 
-
                             // 2 数据和图片分别存入数据库
-                            var res = await this.$http.post('/check/insert', this.checkInfo);
+                            var res = await this.$http.post('/check/insert', this.checkInfo,{headers:{
+                                    'token':this.token}});
                             if (this.fileList.length > 0) {
                                await this.uploadPic();
                             }
 
-                            // 3 跳转至最后一页
+                            // 3 清空登录数据，并跳转至最后一页
+                            this.$http.get('basicinfo/clearData',{params: {userName: this.userName}});
                             setTimeout(() => {
                                 this.$router.push({
                                     path: '/lastpage'
@@ -632,6 +635,14 @@
                     }
                 } else {
                     Toast.fail('请选择检验类型');
+                }
+            },
+            sleep(n) {
+                var start = new Date().getTime();
+                while (true) {
+                    if (new Date().getTime() - start > n*1000) {
+                        break;
+                    }
                 }
             },
         },

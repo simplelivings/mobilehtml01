@@ -9,7 +9,6 @@
             <div class="viceTitleDiv">
                 <p class="viceTitleText">日期：{{checkDate}}</p>
                 <p class="viceTitleText" style="width: 15vw"></p>
-                <p class="viceTitleText">班次：{{checkClass}}</p>
             </div>
 
             <table width="100%" border="0" cellspacing="1" cellpadding="4" bgcolor="#cccccc" class="table"
@@ -74,6 +73,9 @@
             if (localStorage){
                 this.lStorage = localStorage;
             }
+
+            this.userName = this.lStorage.getItem("userName");
+
             //获得当前日期，20xx年xx月xx日
             this.checkDate =new Date().getFullYear()+"年"+ new Date().getMonth()+"月"+ new Date().getDay()+"日";
             //获得当前小时
@@ -87,7 +89,9 @@
                 this.checkClass="晚班";
             }
 
-            this.$http.get('check/checkInfo').then((resp)=>{
+            this.$http.get('check/checkInfo',{
+                headers: {'token': this.token}})
+                .then((resp)=>{
                 this.checkInfoList = resp.data.productInfoList;
                 this.checkDate =resp.data.checkDate;
             })
@@ -101,6 +105,8 @@
         },
         methods: {
             clickCheck(){
+                this.$http.get('basicinfo/clearData',{params: {userName: this.userName}});
+
                 setTimeout(() => {
                     this.$router.push({
                         path: '/login',

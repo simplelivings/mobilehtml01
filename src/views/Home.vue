@@ -28,7 +28,6 @@
         },
         name: 'Home',
         created() {
-            console.log("-----created-----");
             this.reloadView();
         },
         methods:{
@@ -41,7 +40,7 @@
 
                     if (time == 0){
                         clearInterval(timer);
-                        console.log("-----reloadView-----"+time);
+                        // console.log("-----reloadView-----"+time);
 
                         _this.$router.push({path:'/login'});
                     }
