@@ -43,22 +43,6 @@
                         :rules="[{validator:passConfirmValidator,message:'两次密码不一致'}]"
                 />
 
-                <van-field
-                        v-model="valuePhone"
-                        label="手机号"
-                        placeholder="请输入手机号"
-                        @blur="userPhoneBlur"
-                        :rules="[{ validator: phoneValidator, message: '手机号不存在'}]"
-                />
-
-                <van-field
-                        v-model="valueUserId"
-                        label="身份证"
-                        placeholder="请输入15或18位身份证号"
-                        @blur="userIdBlur"
-                        :rules="[{ validator: userIdValidator, message: '身份证号不存在'}]"
-                />
-
 
                 <van-field v-model="familyName" label="姓    名" placeholder="请输入姓名"/>
 
@@ -76,17 +60,14 @@
                     :rules="[{ validator: emailValidator, message: '请输入正确邮箱地址' }]"
             />
 
-            <van-field
-                    v-model="recEmail"
-                    label="主送邮箱"
-                    v-show="emailFieldShow"
-                    placeholder="请输入主要接收人邮箱  也可不输入"
-                    :rules="[{ validator: recEmailValidator, message: '请输入正确邮箱地址' }]"
-            />
-
-            <van-field v-model="corpName" label="公    司" placeholder="请输入公司名称"/>
-
         </van-form>
+
+        <van-cell value="是否用邮箱接收审核表? 绿：接收，红：不接收">
+            <template #right-icon>
+                <van-switch v-model="checked" @click="switchClick" active-color="#36C364" inactive-color="#ee0a24"
+                            size="24"/>
+            </template>
+        </van-cell>
 
 
         <div style="margin: 2vw">
@@ -110,20 +91,14 @@
                     password: '',
                     familyName: '',
                     emailAddress: '',
-                    recEmail: '',
                     userRight: '',
-                    corpName: '',
                 },//POST至服务器数据，含用户名和密码；
                 valueUser: '',//用户输入用户名；
                 valuePs: '',//用户输入密码；
                 valuePsConfirm: '',
-                valuePhone: '',
-                valueUserId: '',
                 familyName: '',
                 emailAddress: '',
-                recEmail: '',
-                corpName: '',
-                userRight: -1,
+                userRight: 2,
                 nameNumber: -1,
                 checked: true,
                 emailFieldShow: true,
@@ -159,37 +134,6 @@
                 }
             },
 
-            //验证数据库中是否有手机号
-            async userPhoneBlur() {
-                let tempReturn = await this.$http.get('register/findPhone', {
-                    params: {
-                        userPhone: this.valuePhone,
-                    }
-                });
-                if (this.phoneStatue && tempReturn.data > 0) {
-                    Toast.success('手机号可用');
-                    this.phoneNumber = 10;
-                } else {
-                    this.phoneNumber = -1;
-                    Dialog({message: '手机号有误，请重新输入'});
-                }
-            },
-
-            //验证数据库中是否有身份证号
-            async userIdBlur() {
-                let tempReturn = await this.$http.get('register/findUserId', {
-                    params: {
-                        userId: this.valueUserId,
-                    }
-                });
-                if (this.userIdStatue && tempReturn.data > 0) {
-                    this.userIdNumber = 10;
-                } else {
-                    this.userIdNumber = -1;
-                    Dialog({message: '身份证号有误，请重新输入'});
-                }
-            },
-
 
             //再次输入密码验证
             passConfirmValidator(val) {
@@ -219,38 +163,18 @@
             emailValidator(val) {
                 return /^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/.test(val);
             },
-            recEmailValidator(val){
-                // if (val != null || val.length > 0){
-                //     return /^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/.test(val);
-                // }else {
-                //     return true;
-                // }
-                return true;
-            },
 
-            //电话号码有效性验证
-            phoneValidator(val) {
-                let result = /^(13[0-9]|14[5|7]|15[0|1|2|3|4|5|6|7|8|9]|18[0|1|2|3|5|6|7|8|9])\d{8}$/.test(val);
-                if (result) {
-                    this.phoneStatue = true;
+
+            //滑动开关点击事件
+            switchClick() {
+                console.log("checked========" + this.checked)
+                if (this.checked) {
+                    this.userRight = 0;
                 } else {
-                    this.phoneStatue = false;
+                    this.userRight = 2;
                 }
-                return result;
-            },
-
-            //身份证号码有效性验证
-            userIdValidator(val) {
-                let result = /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/.test(val);
-                if (result){
-                    this.userIdStatue = true;
-                }else{
-                    this.userIdStatue = false;
-                }
-                return result;
-            },
-
-
+            }
+            ,
             //登录按钮点击事件
             async registerBtn() {
                 //用户名放入model中，以便POST至服务器；
@@ -263,11 +187,7 @@
 
                 this.model.emailAddress = this.emailAddress;
 
-                this.model.recEmail = this.recEmail;
-
                 this.model.userRight = this.userRight;
-
-                this.model.corpName = this.corpName;
 
                 //将用户名存入localStorage；
                 this.storage.setItem("userName", this.valueUser);
@@ -283,23 +203,16 @@
                                 if (this.emailFieldShow) {
                                     if (this.emailAddress.length > 0) {
                                         if (this.nameNumber >= 0) {
-                                            if (this.phoneNumber >=0){
-                                                if (this.userIdNumber >=0){
-                                                    await this.$http.post('register/insert', this.model);
 
-                                                    setTimeout(() => {
-                                                        this.$router.push({
-                                                            path: '/login',
-                                                        });
-                                                    }, 2000);
+                                            await this.$http.post('register/insert', this.model);
 
-                                                    Toast.success('注册成功');
-                                                }else{
-                                                    Dialog({message: '身份证号有误，请重新输入'});
-                                                }
-                                            }else {
-                                                Dialog({message: '手机号有误，请重新输入'});
-                                            }
+                                            setTimeout(() => {
+                                                this.$router.push({
+                                                    path: '/jxLogin',
+                                                });
+                                            }, 2000);
+
+                                            Toast.success('注册成功');
                                         } else {
                                             Dialog({message: '用户名有误，请重新输入'});
                                         }
@@ -313,7 +226,7 @@
 
                                         setTimeout(() => {
                                             this.$router.push({
-                                                path: '/login',
+                                                path: '/jxLogin',
                                             });
                                         }, 2000);
 

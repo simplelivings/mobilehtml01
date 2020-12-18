@@ -16,11 +16,9 @@
         </div>
 
         <div class="divcontent">
-            <span>P{{checkNum}}</span>
+            <span>{{checkNum}}</span>
             <p>--检验项目</p>
         </div>
-
-
 
 
         <!--       1 检验过程选择-->
@@ -131,7 +129,7 @@
 
         <!--        图片上传模块-->
         <div class="img">
-            <van-uploader :after-read="afterRead" id="uploads" v-model="fileList" multiple :max-count="2"
+            <van-uploader :before-read="beforeRead" :after-read="afterRead" id="uploads" v-model="fileList" multiple :max-count="2"
                           @delete="onDelete"/>
         </div>
 
@@ -243,6 +241,7 @@
             async nextPageClick() {
                 const _this = this;
                 this.lastShow = true;
+                this.quitShow = true;
 
                 //1.1 判断是否选择了各种数据
                 if (this.checkType > 0) {
@@ -359,6 +358,7 @@
             async lastPageClick() {
                 const _this = this;
                 this.nextShow = true;
+                this.quitShow = true;
 
                 //1.1 判断是否选择了各种数据
                 if (this.checkType > 0) {
@@ -462,6 +462,10 @@
                     Toast.fail('请选择检验类型');
                 }
             },
+            beforeRead(file){
+                this.quitShow = false;
+                return true;
+            },
             //图片读取后，将图片fileList放入sessionStorage中
             afterRead(file) {
                 //图片存入localStorage中，供返回页面时，调取；
@@ -478,7 +482,7 @@
                     //图片src存入localStorage中，供返回页面后，重新向服务器发送图片用
                     this.storage.setItem('checkPicSrc' + this.checkNum, JSON.stringify(picSrc));//src数组放入localStorage中
                 }
-
+                this.quitShow = true;
             },
             //删除图片后，将sessionStorage中fileList内容更新
             onDelete(file) {
@@ -577,12 +581,12 @@
 
             //返回按钮，点击返回首页
             async clickReturn() {
-
                 this.$http.get('basicinfo/clearData',{params: {userName: this.userName}});
-
+                //清除sessionStorage中的内容
+                this.storage.clear();
                 setTimeout(() => {
                     this.$router.push({
-                        path: '/login'
+                        path: '/jxLogin'
                     });
                 }, 1000);
             },
@@ -618,6 +622,9 @@
                             if (this.fileList.length > 0) {
                                await this.uploadPic();
                             }
+
+                            //清除sessionStorage中的内容
+                            this.storage.clear();
 
                             // 3 清空登录数据，并跳转至最后一页
                             this.$http.get('basicinfo/clearData',{params: {userName: this.userName}});

@@ -5,7 +5,7 @@
         <div class="textdiv">谢&nbsp;&nbsp;谢</div>
         <div class="divdiven"></div>
 
-        <div class="divimg">
+        <div class="divimg" v-show="tipShow">
             <img class="img1"@click="clickImg" src="../assets/lastapplogo.png">
             <div class="textdiv2">AuditAll</div>
         </div>
@@ -21,8 +21,24 @@
 
     export default {
         name: 'Home',
-        components: {
-            HelloWorld
+        data(){
+            return {
+                tipShow: false,
+                loginNum: '',
+                storage:'',
+            }
+        },
+
+        created() {
+            if (localStorage) {
+                this.storage = localStorage;
+            }
+            this.loginNum = this.storage.getItem("loginNum");
+            if (this.loginNum == 1) {
+                this.tipShow = false;
+            } else if (this.loginNum == 2) {
+                this.tipShow = true;
+            }
         },
         methods:{
             clickImg(){

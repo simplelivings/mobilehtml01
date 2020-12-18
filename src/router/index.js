@@ -12,10 +12,50 @@ import CheckPage from "../views/CheckPage";
 import CheckSelectPage from "../views/CheckSelectPage";
 import PasswordPage from "../views/PasswordPage";
 import ValidatePassword from "../views/ValidatePassword";
+import InspectPage from "../views/InspectPage";
+import JxLogin from "../views/JxLogin";
+import JxRegisterPage from "../views/JxRegisterPage";
+import InspectHome from "../views/InspectHome";
+import SuperLogin from "../views/SuperLogin";
+import RegisterInfo from "../views/RegisterInfo";
+import ChangeRegisterInfo from "../views/ChangeRegisterInfo";
+import Test from "../views/Test";
 
 Vue.use(VueRouter)
 
 const routes = [
+    {
+        path: '/test',
+        component: Test
+    },
+    {
+        path: '/changeRegisterInfo',
+        component: ChangeRegisterInfo
+    },
+    {
+        path: '/registerInfo',
+        component: RegisterInfo
+    },
+    {
+        path: '/superLogin',
+        component: SuperLogin
+    },
+    {
+        path: '/',
+        component: InspectHome
+    },
+    {
+        path: '/jxRegister',
+        component: JxRegisterPage
+    },
+    {
+        path: '/jxLogin',
+        component: JxLogin
+    },
+    {
+        path: '/inspectPage',
+        component: InspectPage
+    },
     {
         path: '/validate/:id/',
         component: ValidatePassword
@@ -53,7 +93,7 @@ const routes = [
         component: AuditPage
     },
     {
-        path: '/',
+        path: '/jxHome',
         name: 'Home',
         component: Home
     },

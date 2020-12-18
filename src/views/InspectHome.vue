@@ -1,11 +1,10 @@
 <template>
     <div class="home">
         <p></p>
-        <img alt="Vue logo" width="100vw" src="../assets/corplogo.png">
-        <div class="textdiv">大连嘉翔科技有限公司</div>
+        <img alt="Vue logo" width="150vw" src="../assets/lastapplogo.png">
+        <div class="textdiv">表格花</div>
         <div class="divdiven"></div>
         <div class="divimg">
-            <img src="../assets/applogo.png">
             <div class="textdiv2">AuditAll</div>
         </div>
         <div style="height: 20vw"></div>
@@ -23,10 +22,10 @@
     import HelloWorld from '@/components/HelloWorld.vue'
 
     export default {
+        name: 'InspectH',
         data(){
             return{}
         },
-        name: 'Home',
         created() {
             this.reloadView();
         },
@@ -42,7 +41,7 @@
                         clearInterval(timer);
                         // console.log("-----reloadView-----"+time);
 
-                        _this.$router.push({path:'/jxLogin'});
+                        _this.$router.push({path:'/login'});
                     }
                 },1000);
             },
@@ -78,7 +77,7 @@
         flex-direction: column;
         margin: 0;
         img{
-            width: 50px;
+            width: 100vw;
             margin: 0;
             opacity: 0.5;
         }

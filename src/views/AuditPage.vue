@@ -2,13 +2,7 @@
     <div>
         <!--1        头部-->
         <div class="top">
-            <P></P>
             <p>分层审核</p>
-            <P></P>
-            <P></P>
-            <P></P>
-            <P></P>
-            <P></P>
             <P></P>
             <P></P>
             <P></P>
@@ -26,8 +20,8 @@
         </div>
 
         <!--        符合性判断-->
-        <div class="divconform">
-            <van-radio-group v-model="radio" direction="vertical" @change="radioGroupChange">
+        <div class="divconfirm">
+            <van-radio-group v-model="radio" direction="vertical" >
                 <van-radio class="vanradio" name="1" icon-size="4vw" checked-color="greenyellow" @click="conformClick">Y
                     | 符合
                 </van-radio>
@@ -218,14 +212,17 @@
                     // 重新选择图片时使用
                     if (this.fileList.length == 0) {
                         if (this.storage.getItem('pic' + this.num + 0) != null) {
-                            var jsons = this.storage.getiItem('pic' + this.num);
+                            var jsons = this.storage.getItem('pic' + this.num);
                             this.fileList = JSON.parse(jsons);
                         }
                     }
 
                     // 数据存入数据库
-                    var res = await this.$http.post('/auditinfo/insert', this.auditInfo,{headers:{
-                            'token':this.token}});
+                    var res = await this.$http.post('/auditinfo/insert', this.auditInfo, {
+                        headers: {
+                            'token': this.token
+                        }
+                    });
                     this.conformRadio.conformNum = res.data.conformNum;
                     this.conformRadio.unconformNum = res.data.unconformNum;
                     this.conformRadio.finishNum = res.data.finishNum;
@@ -325,8 +322,11 @@
                     }
 
                     // 数据存入数据库
-                    var res = await this.$http.post('/auditinfo/insert', this.auditInfo,{headers:{
-                            'token':this.token}});
+                    var res = await this.$http.post('/auditinfo/insert', this.auditInfo, {
+                        headers: {
+                            'token': this.token
+                        }
+                    });
                     this.conformRadio.conformNum = res.data.conformNum;
                     this.conformRadio.unconformNum = res.data.unconformNum;
                     this.conformRadio.finishNum = res.data.finishNum;
@@ -378,8 +378,6 @@
                     }
 
                     //获取localStorage中符合性判断，并重置message值；
-
-
                     if (this.storage.getItem('auditFind' + this.num) != null) {
                         this.message = this.storage.getItem('auditFind' + this.num);
                     }
@@ -388,14 +386,67 @@
                 }
             },
             clickReturn() {
-                this.$http.get('basicinfo/clearData',{params: {userName: this.userName}});
-
+                this.$http.get('basicinfo/clearData', {params: {userName: this.userName}});
+                //清除sessionStorage中的内容
+                this.storage.clear();
                 setTimeout(() => {
                     this.$router.push({
-                        path: '/login'
+                        path: '/jxLogin'
                     });
                 }, 1000);
 
+            },
+            async clickQuit() {
+                if (this.radio > 0) {
+                    this.quitShow = false;
+                    this.auditInfo.auditPage = this.num;
+                    this.auditInfo.auditCon = this.radio;
+                    this.auditInfo.auditFind = this.message;
+                    this.auditInfo.userName = this.userName;//用户名传入对象中，有点重复
+                    this.auditInfo.auditNum = this.auditNum;
+
+                    // 数据存入数据库
+                    var res = await this.$http.post('/auditinfo/insert', this.auditInfo, {
+                        headers: {
+                            'token': this.token
+                        }
+                    });
+
+                    console.log("fileList.length====");
+
+                    // 图片存入数据库并转成excel
+                    if (this.fileList.length > 0) {
+                        await this.uploadPicAndExcel();
+                    } else {
+                        this.sendPic.auditPhotoList = [];//重置发送照片列表
+                        this.sendPic.auditPage = this.num;//设置发送页面编号
+                        this.sendPic.userName = this.userName;//设置发送页面用户名
+                        this.sendPic.auditNum = this.auditNum;
+                        // 生成excel
+                        var resP = await this.$http.post('/auditphoto/auditexcel', this.sendPic, {
+                            headers: {
+                                'token': this.token
+                            }
+                        });
+                    }
+
+
+
+                    Toast.success('审核完成\n可关闭');
+                    //清除sessionStorage中的内容
+                    this.storage.clear();
+
+                    if ((this.conformRadio.finishNum > 0 && ((this.conformRadio.finishNum) == this.totalNum)) || (this.num == this.totalNum)) {
+                        setTimeout(() => {
+                            this.$router.push({
+                                path: '/lastpage'
+                            });
+                        }, 2000);
+
+                    }
+                } else {
+                    Toast.fail('请判断符合性');
+                }
             },
             afterRead(file) {
 
@@ -490,12 +541,14 @@
 
                 }
                 Promise.all(promiseList).then(() => {
-                    this.$http.post('/auditphoto/insert', this.sendPic,{headers:{
-                        'token':this.token}}).then(function (resp) {
+                    this.$http.post('/auditphoto/insert', this.sendPic, {
+                        headers: {
+                            'token': this.token
+                        }
+                    }).then(function (resp) {
                     });
                 });
             },
-            //图片转成base64，并发送至服务器。
             uploadPicAndExcel() {
                 this.sleep(0.2);
 
@@ -520,10 +573,10 @@
                             tempImgList[i].onload = () => {
                                 let tConvas = document.createElement("canvas");//创建画布；
                                 let ctx = tConvas.getContext("2d");//设置画布类型
-                                tConvas.width = tempImgList[i].width / 5;//设置画布宽度
-                                tConvas.height = tempImgList[i].height / 5;//设置画布高度
+                                tConvas.width = tempImgList[i].width;//设置画布宽度
+                                tConvas.height = tempImgList[i].height;//设置画布高度
 
-                                ctx.drawImage(tempImgList[i], 0, 0, tempImgList[i].width / 5, tempImgList[i].height / 5);//将图片载入画布
+                                ctx.drawImage(tempImgList[i], 0, 0, tempImgList[i].width, tempImgList[i].height);//将图片载入画布
                                 let dataURL = tConvas.toDataURL();//得到画布的URL
 
                                 let s;
@@ -546,11 +599,11 @@
 
                                 tempImgStorageList[i].onload = () => {
                                     let tConvas = document.createElement("canvas");//创建画布；
-                                    tConvas.width = tempImgStorageList[i].width / 5;//设置画布宽度
-                                    tConvas.height = tempImgStorageList[i].height / 5;//设置画布高度
+                                    tConvas.width = tempImgStorageList[i].width;//设置画布宽度
+                                    tConvas.height = tempImgStorageList[i].height;//设置画布高度
 
                                     let ctx = tConvas.getContext("2d");//设置画布类型
-                                    ctx.drawImage(tempImgStorageList[i], 0, 0, tempImgStorageList[i].width / 5, tempImgStorageList[i].height / 5);//将图片载入画布
+                                    ctx.drawImage(tempImgStorageList[i], 0, 0, tempImgStorageList[i].width, tempImgStorageList[i].height);//将图片载入画布
                                     let dataURL = tConvas.toDataURL();//得到画布的URL
                                     let s;
                                     s = dataURL.replace(/^data:image\/\w+;base64,/, "");//去base64头部
@@ -563,12 +616,20 @@
 
                 }
                 Promise.all(promiseList).then(() => {
-                    this.$http.post('/auditphoto/insertandexcel', this.sendPic,{headers:{
-                            'token':this.token}}).then(function (resp) {
+                    this.$http.post('/auditphoto/insert', this.sendPic, {
+                        headers: {
+                            'token': this.token
+                        }
+                    }).then((resp) => {
+                        // 生成excel
+                        var resP = this.$http.post('/auditphoto/auditexcel', this.sendPic, {
+                            headers: {
+                                'token': this.token
+                            }
+                        });
                     });
                 });
             },
-
             conformClick() {//符合点击事件，控制底部计数变化
                 //1 没到最后一页，数据库未满，在数据库基础上+1
                 // console.log("radio===" + this.radio);
@@ -692,39 +753,6 @@
                     this.etotalNum = this.econformNum + this.eunconformNum;
                 }
             },
-            async clickQuit() {
-                if (this.radio > 0) {
-                    this.quitShow = false;
-                    Toast.success('审核完成\n可关闭');
-                    this.auditInfo.auditPage = this.num;
-                    this.auditInfo.auditCon = this.radio;
-                    this.auditInfo.auditFind = this.message;
-                    this.auditInfo.userName = this.userName;//用户名传入对象中，有点重复
-                    this.auditInfo.auditNum = this.auditNum;
-
-                    // 数据存入数据库
-                    var res = await this.$http.post('/auditinfo/insert', this.auditInfo,{headers:{
-                        'token':this.token}});
-
-                    // 图片存入数据库并转成excel
-                    if (this.fileList.length > 0) {
-                        await this.uploadPicAndExcel();
-                    }
-
-                }
-
-                if ((this.conformRadio.finishNum > 0 && ((this.conformRadio.finishNum) == this.totalNum)) || (this.num == this.totalNum)) {
-
-                    setTimeout(() => {
-                        this.$router.push({
-                            path: '/lastpage'
-                        });
-                    }, 2000);
-
-                } else {
-                    Toast.fail('请判断符合性');
-                }
-            },
             sleep(n) {
                 var start = new Date().getTime();
                 while (true) {
@@ -738,7 +766,24 @@
     }
 </script>
 
-<style lang="less">
+<style scoped lang="less">
+    .top {
+        background-color: #ffffff;
+        height: 12.889vw;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        margin-right: 4vw;
+        margin-top: 6vw;
+
+        p {
+            margin-left: 4vw;
+            font-size: 4vw;
+            font-weight: bold;
+            color: #36C364;
+        }
+    }
     .divfinal {
         margin-left: 4vw;
         display: flex;
@@ -757,7 +802,7 @@
         }
     }
 
-    .divconform {
+    .divconfirm {
         margin-left: 4vw;
         display: flex;
         justify-content: left;
@@ -791,34 +836,6 @@
         }
     }
 
-    .top {
-        background-color: #ffffff;
-        height: 12.889vw;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-right: 4vw;
-
-        p {
-            margin-left: 4vw;
-            font-size: 4vw;
-            font-weight: bold;
-            color: chocolate;
-        }
-
-        button {
-            background-color: #36C364;
-            width: 25vw;
-            height: 8vw;
-            font-size: 3vw;
-            font-weight: bold;
-            color: chocolate;
-            border-color: white;
-            border-radius: 2vw;
-            text-align: center;
-        }
-    }
-
     .ptitle {
         margin-left: 4vw;
         margin-top: 2vw;
@@ -845,7 +862,7 @@
 
     .divdivender1 {
         background-color: white;
-        height: 1vw;
+        width: 5vw;
     }
 
     .vanradio {

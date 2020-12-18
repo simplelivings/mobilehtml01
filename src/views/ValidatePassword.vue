@@ -66,6 +66,8 @@
                     userName: '',
                     password: '',
                 },
+                loginNum:'',
+                storage:'',
             };
 
         },
@@ -74,6 +76,7 @@
             if (localStorage) {
                 this.storage = localStorage;
             }
+            this.loginNum = this.storage.getItem("loginNum");
         },
         mounted() {
 
@@ -105,11 +108,19 @@
                             message: '密码重置成功，是否至登录页面？'
                         })
                         .then(()=>{
-                            setTimeout(() => {
-                                this.$router.push({
-                                    path: '/login',
-                                });
-                            }, 2000);
+                            if (this.loginNum == 1){
+                                setTimeout(() => {
+                                    this.$router.push({
+                                        path: '/jxLogin'
+                                    });
+                                }, 1000);
+                            }else if (this.loginNum == 2){
+                                setTimeout(() => {
+                                    this.$router.push({
+                                        path: '/login'
+                                    });
+                                }, 1000);
+                            }
                         }).catch(()=>{
                                 this.quitBtn();
                             });

@@ -109,7 +109,7 @@
 
                 setTimeout(() => {
                     this.$router.push({
-                        path: '/login',
+                        path: '/jxLogin',
                     });
                 }, 2000);
                 Toast.success('跳转成功');

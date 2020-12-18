@@ -93,18 +93,18 @@
                         }
                     });
                     if (tempReturn.data > 0) {
-                        this.addressSta = 1;
-                    }
-
-
-                    if (this.emailAddress.length > 0 && this.addressSta > 0) {
+                    //     this.addressSta = 1;
+                    // }
+                    //
+                    //
+                    // if (this.emailAddress.length > 0 && this.addressSta > 0) {
                         Dialog({message: '请移步至邮箱，点击链接，重置密码'});
-                        await this.$http.get('register/emailVal', {
-                            params: {
-                                userName: this.valueUser,
-                                emailAddress: this.emailAddress
-                            }
-                        });
+                    //     await this.$http.get('register/emailVal', {
+                    //         params: {
+                    //             userName: this.valueUser,
+                    //             emailAddress: this.emailAddress
+                    //         }
+                    //     });
 
                         setTimeout(() => {
                             window.opener = null;
@@ -141,7 +141,7 @@
             },
             //验证数据库中是否有用户名
             async userNameBlur() {
-                let tempReturn = await this.$http.get('register/find', {
+                let tempReturn = await this.$http.get('register/findName', {
                     params: {
                         userName: this.valueUser,
                     }
