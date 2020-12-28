@@ -7,7 +7,7 @@
         <div class="divimg">
             <div class="textdiv2">AuditAll</div>
         </div>
-        <div style="height: 20vw"></div>
+        <div style="height: 10vw"></div>
         <div>
             <a class="aLink" href="http://www.beian.miit.gov.cn/">备案号:辽ICP备20009953号</a>
         </div>

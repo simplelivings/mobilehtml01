@@ -51,13 +51,13 @@
                         :rules="[{ validator: phoneValidator, message: '手机号不存在'}]"
                 />
 
-                <van-field
-                        v-model="valueUserId"
-                        label="身份证"
-                        placeholder="请输入15或18位身份证号"
-                        @blur="userIdBlur"
-                        :rules="[{ validator: userIdValidator, message: '身份证号不存在'}]"
-                />
+<!--                <van-field-->
+<!--                        v-model="valueUserId"-->
+<!--                        label="身份证"-->
+<!--                        placeholder="请输入15或18位身份证号"-->
+<!--                        @blur="userIdBlur"-->
+<!--                        :rules="[{ validator: userIdValidator, message: '身份证号不存在'}]"-->
+<!--                />-->
 
 
                 <van-field v-model="familyName" label="姓    名" placeholder="请输入姓名"/>
@@ -84,7 +84,7 @@
                     :rules="[{ validator: recEmailValidator, message: '请输入正确邮箱地址' }]"
             />
 
-            <van-field v-model="corpName" label="公    司" placeholder="请输入公司名称"/>
+            <van-field v-model="corpName" label="公    司" placeholder="请输入公司名称  也可不输入"/>
 
         </van-form>
 
@@ -108,6 +108,7 @@
                 model: {
                     userName: '',
                     password: '',
+                    userPhone:'',
                     familyName: '',
                     emailAddress: '',
                     recEmail: '',
@@ -118,12 +119,12 @@
                 valuePs: '',//用户输入密码；
                 valuePsConfirm: '',
                 valuePhone: '',
-                valueUserId: '',
+                // valueUserId: '',
                 familyName: '',
                 emailAddress: '',
                 recEmail: '',
                 corpName: '',
-                userRight: -1,
+                userRight: 6,
                 nameNumber: -1,
                 checked: true,
                 emailFieldShow: true,
@@ -131,7 +132,7 @@
                 phoneStatue: false,
                 userIdStatue: false,
                 phoneNumber: -1,
-                userIdNumber: -1,
+                // userIdNumber: -1,
             };
         },
         created() {
@@ -175,20 +176,20 @@
                 }
             },
 
-            //验证数据库中是否有身份证号
-            async userIdBlur() {
-                let tempReturn = await this.$http.get('register/findUserId', {
-                    params: {
-                        userId: this.valueUserId,
-                    }
-                });
-                if (this.userIdStatue && tempReturn.data > 0) {
-                    this.userIdNumber = 10;
-                } else {
-                    this.userIdNumber = -1;
-                    Dialog({message: '身份证号有误，请重新输入'});
-                }
-            },
+            // //验证数据库中是否有身份证号
+            // async userIdBlur() {
+            //     let tempReturn = await this.$http.get('register/findUserId', {
+            //         params: {
+            //             userId: this.valueUserId,
+            //         }
+            //     });
+            //     if (this.userIdStatue && tempReturn.data > 0) {
+            //         this.userIdNumber = 10;
+            //     } else {
+            //         this.userIdNumber = -1;
+            //         Dialog({message: '身份证号有误，请重新输入'});
+            //     }
+            // },
 
 
             //再次输入密码验证
@@ -230,7 +231,7 @@
 
             //电话号码有效性验证
             phoneValidator(val) {
-                let result = /^(13[0-9]|14[5|7]|15[0|1|2|3|4|5|6|7|8|9]|18[0|1|2|3|5|6|7|8|9])\d{8}$/.test(val);
+                let result = /^(13[0-9]|14[01456879]|15[0-3,5-9]|16[2567]|17[0-8]|18[0-9]|19[0-3,5-9])\d{8}$/.test(val);
                 if (result) {
                     this.phoneStatue = true;
                 } else {
@@ -239,16 +240,16 @@
                 return result;
             },
 
-            //身份证号码有效性验证
-            userIdValidator(val) {
-                let result = /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/.test(val);
-                if (result){
-                    this.userIdStatue = true;
-                }else{
-                    this.userIdStatue = false;
-                }
-                return result;
-            },
+            // //身份证号码有效性验证
+            // userIdValidator(val) {
+            //     let result = /(^[1-9]\d{5}(18|19|([23]\d))\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$)|(^[1-9]\d{5}\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\d{3})$/.test(val);
+            //     if (result){
+            //         this.userIdStatue = true;
+            //     }else{
+            //         this.userIdStatue = false;
+            //     }
+            //     return result;
+            // },
 
 
             //登录按钮点击事件
@@ -262,6 +263,8 @@
                 this.model.familyName = this.familyName;
 
                 this.model.emailAddress = this.emailAddress;
+
+                this.model.userPhone = this.valuePhone;
 
                 this.model.recEmail = this.recEmail;
 
@@ -284,7 +287,7 @@
                                     if (this.emailAddress.length > 0) {
                                         if (this.nameNumber >= 0) {
                                             if (this.phoneNumber >=0){
-                                                if (this.userIdNumber >=0){
+
                                                     await this.$http.post('register/insert', this.model);
 
                                                     setTimeout(() => {
@@ -294,9 +297,7 @@
                                                     }, 2000);
 
                                                     Toast.success('注册成功');
-                                                }else{
-                                                    Dialog({message: '身份证号有误，请重新输入'});
-                                                }
+
                                             }else {
                                                 Dialog({message: '手机号有误，请重新输入'});
                                             }

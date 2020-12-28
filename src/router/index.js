@@ -41,7 +41,7 @@ const routes = [
         component: SuperLogin
     },
     {
-        path: '/',
+        path: '/inspectHome',
         component: InspectHome
     },
     {
@@ -93,7 +93,7 @@ const routes = [
         component: AuditPage
     },
     {
-        path: '/jxHome',
+        path: '/',
         name: 'Home',
         component: Home
     },
@@ -117,8 +117,8 @@ const routes = [
 
 const router = new VueRouter({
     mode: 'history',
-    // base: '/audit/',
-    base: process.env.BASE_URL,
+    base: '/audit/',
+    // base: process.env.BASE_URL,
     routes
     // routes: [
     //     { path: '*',

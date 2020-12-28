@@ -23,6 +23,7 @@
                 <van-field
                         v-model="valueUser"
                         label="用 户 名"
+                        placeholder="请输入用户名"
                         disabled
                 />
                 <van-field
@@ -39,6 +40,12 @@
                         placeholder="请再次输入新密码"
                         :rules="[{validator:passConfirmValidator,message:'两次密码不一致'}]"
                 />
+                <van-field
+                        v-model="valueReturnNum"
+                        label="校验码"
+                        placeholder="请输入校验码"
+                />
+
             </van-form>
 
         </div>
@@ -62,9 +69,11 @@
                 valueUser: '',//用户输入用户名；
                 valuePs: '',
                 valuePsConfirm: '',
+                valueReturnNum:'',
                 model: {
                     userName: '',
                     password: '',
+                    returnNum:'',
                 },
                 loginNum:'',
                 storage:'',
@@ -99,6 +108,7 @@
             async registerBtn() {
                 this.model.userName = this.valueUser;
                 this.model.password = this.valuePs;
+                this.model.returnNum = this.valueReturnNum;
                 if (this.valuePs != null && this.valuePsConfirm != null && this.valuePs == this.valuePsConfirm) {
                     var returnData = await this.$http.post('register/update', this.model);
                     if (returnData.data > 0) {
@@ -124,7 +134,7 @@
                         }).catch(()=>{
                                 this.quitBtn();
                             });
-                    }
+                    }else {Dialog({message: '校验码不正确，请重新输入'});}
                 } else {
                     Dialog({message: '密码输入有误，请重新输入'});
                 }

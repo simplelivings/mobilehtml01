@@ -93,17 +93,10 @@
                 //设置要查询的用户名，用于传输至服务器
                 this.model.familyName = this.valueUser;
 
-                //所有信息，都显示
-                this.userShow = true;
-                this.rightShow = true;
-                this.regShow = true;
-                this.payShow = true;
-                this.restShow = true;
 
-                var userRight;
-                var userRegDate;
-                var userUpdateDate;
 
+                let userRight;
+                let userRegDate;
                 //发送请求至后端，获取用户注册信息
                 await this.$http.get('/superRegister/findRegister', {
                     headers: {'token': this.token},
@@ -112,11 +105,30 @@
                         checkName: this.valueUser,
                     }
                 }).then((resp) => {
-                    console.log("==resp==" + resp.data.userName);
-                    userRight = resp.data.userRight;
-                    userRegDate = resp.data.createTime;
-                    userUpdateDate = resp.data.updateTime;
+                    console.log("==resp==" + resp.data);
+                    if (resp.data !=null && Object.keys(resp.data).length>0){
+                        userRight = resp.data.userRight;
+                        userRegDate = resp.data.createTime;
+                        userUpdateDate = resp.data.updateTime;
+
+                        //所有信息，都显示
+                        this.userShow = true;
+                        this.rightShow = true;
+                        this.regShow = true;
+                        this.payShow = true;
+                        this.restShow = true;
+                    }else{
+                        Toast.fail('用户不存在');
+                        this.rightShow = false;
+                        this.regShow = false;
+                        this.payShow = false;
+                        this.restShow = false;
+                    }
                 });
+                let userUpdateDate;
+
+                let returnNum;
+
 
                 //设置用户权限显示
                 switch (userRight) {

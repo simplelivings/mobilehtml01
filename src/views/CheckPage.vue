@@ -190,6 +190,18 @@
                     checkPhotoList: [],
                 },
                 storage:'',
+
+                picValue: {//indexedDB存放对象
+                    id: '',
+                    picList: ''
+                },
+                indexedDB: '',//indexedDB
+                inspectDB: '',//indexedDB
+                tableName: 'check',
+                version: 2,//indexedDB版本号
+                notSupportIndexed: true,//是否支持indexedDB
+                quality: 0.8,//图片压缩质量
+                comQuality: 2,//图片长宽比例
             };
         },
         created() {
@@ -202,6 +214,9 @@
             this.userName = this.lStorage.getItem("userName");
             this.auditNum = this.lStorage.getItem("auditNum");
             this.token = this.lStorage.getItem("auditWay");
+
+            //indexedDB初始化
+            this.openDB();
 
             //刷新后，仍保留当前页码
             if (this.storage.getItem('checkNum') > 1) {
@@ -324,9 +339,9 @@
                             if ((this.storage.getItem('checkNote' + this.checkNum) != null) && (this.storage.getItem('checkNote' + this.checkNum).length > 0)) {
                                 this.checkNote = this.storage.getItem('checkNote' + this.checkNum);
                             }
-                            if (this.storage.getItem('checkPic' + this.checkNum) != null) {
-                                var jsons = this.storage.getItem('checkPic' + this.checkNum);
-                                this.fileList = JSON.parse(jsons);
+
+                            if (!this.notSupportIndexed) {
+                                this.queryDB(this.checkNum);
                             }
                         } else {
                             Toast.fail('请将检验信息输入完整');
@@ -391,15 +406,6 @@
                             this.storage.setItem('checkNote' + this.checkNum, this.checkNote);
 
 
-                            // 获取localStorage中图片数据，并存入fileList中(点击上一页后，再点击下一页，如果未
-                            // 重新选择图片时使用
-                            if ((this.fileList != null) && (this.fileList.length == 0)) {
-                                if (this.storage.getItem('checkPic' + this.checkNum + 0) != null) {
-                                    var jsons = this.storage.getItem('checkPic' + this.checkNum);
-                                    this.fileList = JSON.parse(jsons);
-                                }
-                            }
-
                             // 1.4 数据和图片分别存入数据库
                             //1.4.1 数据存入数据库
                             var res = await this.$http.post('/check/insert', this.checkInfo,{headers:{
@@ -448,10 +454,11 @@
                             if ((this.storage.getItem('checkNote' + this.checkNum) != null) && (this.storage.getItem('checkNote' + this.checkNum).length > 0)) {
                                 this.checkNote = this.storage.getItem('checkNote' + this.checkNum);
                             }
-                            if (this.storage.getItem('checkPic' + this.checkNum) != null) {
-                                var jsons = this.storage.getItem('checkPic' + this.checkNum);
-                                this.fileList = JSON.parse(jsons);
+
+                            if (!this.notSupportIndexed) {
+                                this.queryDB(this.checkNum);
                             }
+
                         } else {
                             Toast.fail('请将检验信息输入完整');
                         }
@@ -466,112 +473,144 @@
                 this.quitShow = false;
                 return true;
             },
-            //图片读取后，将图片fileList放入sessionStorage中
+            //图片读取后
+            //1 图片列表放入indexedDB中
+            //2 保存按钮可用
             afterRead(file) {
-                //图片存入localStorage中，供返回页面时，调取；
+                //1 图片列表放入indexedDB中
                 if (this.fileList.length > 0) {
-                    // this.uploadPic();
-                    var s = JSON.stringify(this.fileList);
-                    this.storage.setItem('checkPic' + this.checkNum, s);//图片存入localStorage中
-
-                    var picSrc = [];//图片src存入数组中
-                    for (var i = 0; i < this.fileList.length; i++) {
-                        picSrc.push(URL.createObjectURL(this.fileList[i].file));
+                    if (!this.notSupportIndexed) {
+                        this.picValue.id = this.checkNum;
+                        this.picValue.picList = this.fileList;
+                        this.$indexOpr.insertDB(this.inspectDB, this.tableName, this.picValue);
                     }
-
-                    //图片src存入localStorage中，供返回页面后，重新向服务器发送图片用
-                    this.storage.setItem('checkPicSrc' + this.checkNum, JSON.stringify(picSrc));//src数组放入localStorage中
                 }
+                //2 保存按钮可用
                 this.quitShow = true;
             },
-            //删除图片后，将sessionStorage中fileList内容更新
+
+            //图片删除后
+            // 图片列表放入indexedDB中
             onDelete(file) {
-                if (this.fileList.length > 0) {
-                    var s = JSON.stringify(this.fileList);
-                    this.storage.setItem('checkPic' + this.checkNum, s);//图片存入localStorage中
-                } else {
-                    this.storage.removeItem('checkPic' + this.checkNum);//清除图片内容
+                //1 图片列表放入indexedDB中
+                if (!this.notSupportIndexed) {
+                    this.picValue.id = this.checkNum;
+                    this.picValue.picList = this.fileList;
+                    this.$indexOpr.insertDB(this.inspectDB, this.tableName, this.picValue);
                 }
             },
 
             //图片转成base64，并发送至服务器。
+            //1 重置审核图片sendPic信息
+            //2 遍历fileList
+            //2.1 判断图片是否为file类型，是则传至服务器，否则不上传
+            //2.2 判断图片是否大于500KB，大于则压缩图片尺寸与像素，否则不压缩
+            //2.3 使用promiseList将图片发送至服务器，以确保图片操作完成，正确上传至服务器中
+            //2.4 新建一张图片（新建画布只能传入图片,）
+            //2.5 获得fileList中文件的URL,并赋给新建的图片
+            //2.6 新建图片成功后，新建画布
+            //2.7 设置画布类型与长宽参数
+            //2.8 将图片载入画布，并压缩图片
+            //2.9 得到画布的URL,并去除其头部(base64)
+            //2.10 将去除头部的图片放入auditPhotoList中
+            //2.11 图片处理成功后，将promise的resolve设为OK
+            //2.12 promiseList全部处理完成，即fileList中图片全部放入sendPic中后，将图片上传至服务器
             uploadPic() {
 
-                // userName: '',
-                //     checkType:'',
-                //     partNum:'',
-                //     produceTime:'',
-                //     auditNum:'',
-                //     auditPhotoList: [],
-
-                this.sleep(0.5);
-                //1 重置审核信息
-
+                //1 重置审核图片sendPic信息
                 this.checkPhoto.userName = this.userName;//设置发送页面用户名
                 this.checkPhoto.checkType = this.checkType;
                 this.checkPhoto.partNum = this.valuePartNum;
-
                 let checkDate = new Date();
                 this.checkPhoto.produceTime = checkDate.getHours() + "-" + parseInt(checkDate.getMinutes() / 10);
                 this.checkPhoto.checkPhotoList = [];//重置发送照片列表
+                let dataURL;//画布的URL
                 let tempImgList = [];//临时生成img的数组，用于画布canvas使用；
                 let promiseList = [];//promis数组，避免不同步；
 
-                //2 判断file类型
+                //2 遍历fileList
                 for (let i = 0; i < this.fileList.length; i++) {
+
+                    //2.1 判断图片是否为file类型，是则传至服务器，否则不上传
                     var type = this.fileList[i].file.toString().search(/file/i);//判断file类型
-                    if (type > 0) {//2.1 文件类型，直接处理
-                        promiseList[i] = new Promise((resolve, reject) => {
+                    if (type > 0) {
 
-                            tempImgList[i] = new Image();
-                            tempImgList[i].src = URL.createObjectURL(this.fileList[i].file);//如果是文件类型，从fileList得到图片src
+                        //2.2 图片大于500KB，压缩图片尺寸与像素
+                        if (this.fileList[i].file.size / 1024 > 500) {
 
-                            tempImgList[i].onload = () => {
-                                let tConvas = document.createElement("canvas");//创建画布；
-                                let ctx = tConvas.getContext("2d");//设置画布类型
-                                tConvas.width = tempImgList[i].width/5;//设置画布宽度
-                                tConvas.height = tempImgList[i].height/5;//设置画布高度
-
-                                ctx.drawImage(tempImgList[i], 0, 0, tempImgList[i].width/5, tempImgList[i].height/5);//将图片载入画布
-                                let dataURL = tConvas.toDataURL();//得到画布的URL
-
-                                let s;
-                                s = dataURL.replace(/^data:image\/\w+;base64,/, "");//去base64头部
-                                this.checkPhoto.checkPhotoList.push(s);//将去头部base64图片，放入图片列表
-                                resolve("ok");
-                            };
-                        });
-
-                    } else {//2.2 object类型处理
-                        if (this.storage.getItem('checkPicSrc' + this.checkNum) != null) {//如果是object类型，从localStorage中取值
-                            let tempPicSrcList = [];//临时存放localStorage中的src的数组
-                            let tempImgStorageList = [];
-
-                            tempPicSrcList = JSON.parse(this.storage.getItem('checkPicSrc' + this.checkNum));
+                            //2.3 使用promiseList将图片发送至服务器，以确保图片操作完成，正确上传至服务器中
                             promiseList[i] = new Promise((resolve, reject) => {
 
-                                tempImgStorageList[i] = new Image();
-                                tempImgStorageList[i].src = tempPicSrcList[i];
+                                //2.4 新建一张图片
+                                tempImgList[i] = new Image();
 
-                                tempImgStorageList[i].onload = () => {
+                                //2.5 获得fileList中文件的URL,并赋给新建的图片
+                                tempImgList[i].src = URL.createObjectURL(this.fileList[i].file);//如果是文件类型，从fileList得到图片src
+
+                                //2.6 新建图片成功后，新建画布
+                                tempImgList[i].onload = () => {
                                     let tConvas = document.createElement("canvas");//创建画布；
-                                    tConvas.width = tempImgStorageList[i].width/5;//设置画布宽度
-                                    tConvas.height = tempImgStorageList[i].height/5;//设置画布高度
 
+                                    //2.7 设置画布类型与长宽参数
                                     let ctx = tConvas.getContext("2d");//设置画布类型
-                                    ctx.drawImage(tempImgStorageList[i], 0, 0, tempImgStorageList[i].width/5, tempImgStorageList[i].height/5);//将图片载入画布
-                                    let dataURL = tConvas.toDataURL();//得到画布的URL
+                                    tConvas.width = tempImgList[i].width / this.comQuality;//设置画布宽度
+                                    tConvas.height = tempImgList[i].height / this.comQuality;//设置画布高度
+
+                                    //2.8 将图片载入画布，并压缩图片
+                                    ctx.drawImage(tempImgList[i], 0, 0, tempImgList[i].width / this.comQuality, tempImgList[i].height / this.comQuality);//将图片载入画布
+
+                                    //2.9 得到画布的URL,并去除其头部(base64)
+                                    dataURL = tConvas.toDataURL('image/jpeg', this.quality);//得到画布的URL
                                     let s;
                                     s = dataURL.replace(/^data:image\/\w+;base64,/, "");//去base64头部
+
+                                    //2.10 将去除头部的图片放入auditPhotoList中
                                     this.checkPhoto.checkPhotoList.push(s);//将去头部base64图片，放入图片列表
+
+                                    //2.11 图片处理成功后，将promist的resolve设为OK
+                                    resolve("ok");
+                                };
+                            });
+                        }
+                        //2.2 图片小于500KB，不压缩图片
+                        else {
+                            //2.3 使用promiseList将图片发送至服务器，以确保图片操作完成，正确上传至服务器中
+                            promiseList[i] = new Promise((resolve, reject) => {
+
+                                //2.4 新建一张图片
+                                tempImgList[i] = new Image();
+
+                                //2.5 获得fileList中文件的URL,并赋给新建的图片
+                                tempImgList[i].src = URL.createObjectURL(this.fileList[i].file);//如果是文件类型，从fileList得到图片src
+
+                                //2.6 新建图片成功后，新建画布
+                                tempImgList[i].onload = () => {
+                                    let tConvas = document.createElement("canvas");//创建画布；
+
+                                    //2.7 设置画布类型与长宽参数
+                                    let ctx = tConvas.getContext("2d");//设置画布类型
+                                    tConvas.width = tempImgList[i].width;//设置画布宽度
+                                    tConvas.height = tempImgList[i].height;//设置画布高度
+
+                                    //2.8 将图片载入画布，并压缩图片
+                                    ctx.drawImage(tempImgList[i], 0, 0, tempImgList[i].width, tempImgList[i].height);//将图片载入画布
+
+                                    //2.9 得到画布的URL,并去除其头部(base64)
+                                    dataURL = tConvas.toDataURL();//得到画布的URL
+                                    let s;
+                                    s = dataURL.replace(/^data:image\/\w+;base64,/, "");//去base64头部
+
+                                    //2.10 将去除头部的图片放入auditPhotoList中
+                                    this.checkPhoto.checkPhotoList.push(s);//将去头部base64图片，放入图片列表
+
+                                    //2.11 图片处理成功后，将promist的resolve设为OK
                                     resolve("ok");
                                 };
                             });
                         }
                     }
-
                 }
-
+                //2.12 promiseList全部处理完成，即fileList中图片全部放入sendPic中后，将图片上传至服务器
                 Promise.all(promiseList).then(() => {
                     this.$http.post('/checkphoto/insert', this.checkPhoto,{headers:{
                             'token':this.token}}).then(function (resp) {
@@ -626,6 +665,11 @@
                             //清除sessionStorage中的内容
                             this.storage.clear();
 
+                            //  清空indexedDB数据
+                            if (!this.notSupportIndexed) {
+                                this.$indexOpr.shutdownDB(this.indexedDB, this.inspectDB, this.tableName);
+                            }
+
                             // 3 清空登录数据，并跳转至最后一页
                             this.$http.get('basicinfo/clearData',{params: {userName: this.userName}});
                             setTimeout(() => {
@@ -652,6 +696,83 @@
                     }
                 }
             },
+            //新建与打开indexedDB数据库
+            //判断浏览器是否支持indexedDB,支持notSupportIndexed设为false,并打开数据库
+
+            //浏览器支持indexedDB数据库
+            //1 打开IndexedDB请求
+            //2 打开请求的处理结果，有三种结果：失败、成功、阻止
+            //2.1 请求成功后，查询是否有数据，有则将数据赋给fileList中
+            //2.2 请求失败
+            //2.3 请求阻止，打开成功或版本有变化时执行，一初始化数据库
+            openDB() {
+                this.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.msIndexedDB;
+                //判断浏览器是否支持indexedDB,支持notSupportIndexed设为false,并打开数据库
+                if (!this.indexedDB) {
+                    Toast.fail('浏览器不支持indexedDB,翻页时图片将不显示预览，不影响使用');
+                    this.notSupportIndexed = true;
+                } else {
+                    this.notSupportIndexed = false;
+
+                    //1 打开IndexedDB请求
+                    let reqDB = this.indexedDB.open(this.userName+'check', this.version);
+
+                    //2 打开请求的处理结果，有三种结果：失败、成功、阻止
+                    //2.1 请求成功
+                    reqDB.onsuccess = (e) => {
+                        this.inspectDB = e.target.result;
+
+                        // this.lStorage.setItem("inspectVersion",s);
+                        console.log("请求成功" + this.inspectDB.version);
+                        //查询是否有数据，有则赋给fileList
+                        this.queryDB(this.checkNum);
+                        ++this.version;
+                    };
+
+                    //2.2 请求失败
+                    reqDB.onerror = (e) => {
+                    };
+
+                    //2.3 请求阻止，打开成功或版本有变化时执行，一般用于初始化数据库
+                    reqDB.onupgradeneeded = (e) => {
+                        this.inspectDB = e.target.result;//获取到数据库实例
+
+                        if (!this.inspectDB.objectStoreNames.contains(this.tableName)) {
+                            let inspectStore = this.inspectDB.createObjectStore(this.tableName, {
+                                keyPath: 'id',
+                                // autoIncrement: true
+                            });
+                            console.log("数据库创建成功");
+                        }
+                        console.log("进入阻止");
+                    };
+                }
+            },
+
+            //查询indexedDB数据库
+            //1 创建事务
+            //2 通过事务获取store
+            //3 尝试根据id即页面编码checkNum，查询数据
+            //4 查询成功后，数据放入fileList中
+            queryDB(id) {
+                //1 创建事务
+                let transaction = this.inspectDB.transaction(this.tableName, 'readwrite');
+
+                //2 通过事务获取store
+                let inspectStore = transaction.objectStore(this.tableName);
+
+                //3 尝试根据id即页面编码checkNum，查询数据
+                let request = inspectStore.get(id);
+
+                //4 查询成功后，数据放入fileList中
+                request.onsuccess = (e) => {
+                    console.log("查询成功");
+                    if (typeof (e.target.result) != 'undefined') {
+                        this.fileList = e.target.result.picList;
+                    }
+                };
+            },
+
         },
     };
 
@@ -760,6 +881,14 @@
 
     }
 
+    //logo样式
+    .img {
+        display: flex;
+        margin-left: 3vw;
+        margin-top: 0vw;
+        justify-content: left;
+    }
+
     .divcontent {
         height: 6vw;
         margin: 6vw;
@@ -789,5 +918,7 @@
             font-weight: normal;
             color: chocolate;
         }
+
+
     }
 </style>

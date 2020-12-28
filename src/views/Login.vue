@@ -90,7 +90,8 @@
                 valueNum: '',//审核表编号；
                 tipShow: true,
                 valueObjShow:false,
-
+                storage:'',
+                lStorage:'',
             };
         },
         created() {
@@ -99,6 +100,12 @@
             if (localStorage) {
                 this.storage = localStorage;
             }
+
+            if (sessionStorage){
+                this.lStorage = sessionStorage;
+            }
+
+            this.lStorage.clear();
 
             //刷新或下次登录后，保留上次登录信息；
             if (this.storage.getItem("userName") != null) {
